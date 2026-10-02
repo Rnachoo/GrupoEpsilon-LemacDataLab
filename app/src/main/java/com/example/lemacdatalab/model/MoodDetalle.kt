@@ -1,4 +1,7 @@
 package com.example.lemacdatalab.model
 
-class MoodDetalle {
-}
+data class MoodDetalle(
+    val idRegistro: Int,
+    val nivelIntensidad: Int, // 1..10
+    val contexto: String
+)
