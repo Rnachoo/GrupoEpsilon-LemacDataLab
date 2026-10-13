@@ -7,9 +7,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,7 +22,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.lemacdatalab.ui.theme.SuperficieBlanca
+import com.example.lemacdatalab.ui.theme.TextoPrincipal
 import com.example.lemacdatalab.ui.theme.TextoSecundario
+import com.example.lemacdatalab.ui.theme.VerdePrincipal
 
 private val BordeSuave = Color(0xFFE6E6E1)
 
@@ -36,7 +39,8 @@ fun DeslindeCard(
         onClick = { onAceptadoChange(!aceptado) },
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, BordeSuave)
+        border = BorderStroke(1.dp, BordeSuave),
+        colors = CardDefaults.outlinedCardColors(containerColor = SuperficieBlanca)
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
@@ -46,8 +50,9 @@ fun DeslindeCard(
                 checked = aceptado,
                 onCheckedChange = null,
                 colors = CheckboxDefaults.colors(
-                    checkedColor = MaterialTheme.colorScheme.primary,
-                    uncheckedColor = TextoSecundario
+                    checkedColor = VerdePrincipal,
+                    uncheckedColor = TextoSecundario,
+                    checkmarkColor = SuperficieBlanca
                 ),
                 modifier = Modifier.padding(4.dp)
             )
@@ -58,7 +63,7 @@ fun DeslindeCard(
                     withStyle(
                         SpanStyle(
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = TextoPrincipal
                         )
                     ) {
                         append("deslinde clínico")
