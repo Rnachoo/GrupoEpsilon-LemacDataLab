@@ -1,6 +1,5 @@
 package com.example.lemacdatalab.screens
 
-import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,7 +23,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -37,7 +35,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.view.WindowCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.lemacdatalab.components.DeslindeCard
 import com.example.lemacdatalab.components.IdSinteticoCard
@@ -62,19 +59,6 @@ fun LoginScreen(
         if (state.ingresado) {
             viewModel.onIngresoConsumido()
             onIngresoExitoso()
-        }
-    }
-
-    // El login siempre es claro: íconos oscuros en la barra de estado aunque el teléfono use tema oscuro
-    val window = LocalActivity.current?.window
-    DisposableEffect(window) {
-        val controller = window?.let { WindowCompat.getInsetsController(it, it.decorView) }
-        val iconosOscurosPrevios = controller?.isAppearanceLightStatusBars
-        controller?.isAppearanceLightStatusBars = true
-        onDispose {
-            if (controller != null && iconosOscurosPrevios != null) {
-                controller.isAppearanceLightStatusBars = iconosOscurosPrevios
-            }
         }
     }
 
