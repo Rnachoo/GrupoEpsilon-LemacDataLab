@@ -1,5 +1,6 @@
 package com.example.lemacdatalab.screens
 
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -20,10 +21,10 @@ import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -36,10 +37,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.lemacdatalab.components.DeslindeCard
 import com.example.lemacdatalab.components.IdSinteticoCard
+import com.example.lemacdatalab.ui.theme.FondoClaro
+import com.example.lemacdatalab.ui.theme.SuperficieBlanca
+import com.example.lemacdatalab.ui.theme.TextoPrincipal
 import com.example.lemacdatalab.ui.theme.TextoSecundario
+import com.example.lemacdatalab.ui.theme.VerdePrincipal
 import com.example.lemacdatalab.viewmodel.LoginViewModel
 
 private val BotonDeshabilitado = Color(0xFFE4E4E0)
@@ -59,31 +65,20 @@ fun LoginScreen(
         }
     }
 
-    Scaffold(
-        bottomBar = {
-            Button(
-                onClick = { viewModel.ingresar() },
-                enabled = state.deslindeAceptado,
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    disabledContainerColor = BotonDeshabilitado,
-                    disabledContentColor = Color.White
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-                    .height(52.dp)
-            ) {
-                Text("Ingresar al Portal", fontWeight = FontWeight.Bold)
-                Spacer(Modifier.width(4.dp))
-                Icon(
-                    imageVector = Icons.Filled.ChevronRight,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
+    // El login siempre es claro: íconos oscuros en la barra de estado aunque el teléfono use tema oscuro
+    val window = LocalActivity.current?.window
+    DisposableEffect(window) {
+        val controller = window?.let { WindowCompat.getInsetsController(it, it.decorView) }
+        val iconosOscurosPrevios = controller?.isAppearanceLightStatusBars
+        controller?.isAppearanceLightStatusBars = true
+        onDispose {
+            if (controller != null && iconosOscurosPrevios != null) {
+                controller.isAppearanceLightStatusBars = iconosOscurosPrevios
             }
         }
-    ) { padding ->
+    }
+
+    Scaffold(containerColor = FondoClaro) { padding ->
         Column(
             modifier = Modifier
                 .padding(padding)
@@ -98,11 +93,11 @@ fun LoginScreen(
             Icon(
                 imageVector = Icons.Outlined.Shield,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onPrimary,
+                tint = SuperficieBlanca,
                 modifier = Modifier
                     .size(48.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary)
+                    .background(VerdePrincipal)
                     .padding(12.dp)
             )
 
@@ -111,7 +106,7 @@ fun LoginScreen(
                 fontFamily = FontFamily.Serif,
                 fontSize = 30.sp,
                 lineHeight = 36.sp,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = TextoPrincipal,
                 textAlign = TextAlign.Center
             )
 
@@ -136,6 +131,32 @@ fun LoginScreen(
                 aceptado = state.deslindeAceptado,
                 onAceptadoChange = viewModel::onDeslindeChange
             )
+
+            // Botón justo bajo el deslinde para que quede al alcance en cualquier pantalla
+            Button(
+                onClick = { viewModel.ingresar() },
+                enabled = state.deslindeAceptado,
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = VerdePrincipal,
+                    contentColor = SuperficieBlanca,
+                    disabledContainerColor = BotonDeshabilitado,
+                    disabledContentColor = SuperficieBlanca
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp)
+            ) {
+                Text("Ingresar al Portal", fontWeight = FontWeight.Bold)
+                Spacer(Modifier.width(4.dp))
+                Icon(
+                    imageVector = Icons.Filled.ChevronRight,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+
+            Spacer(Modifier.height(8.dp))
         }
     }
 }
