@@ -35,7 +35,7 @@ private val DarkColorScheme = darkColorScheme(
 // configuracion del tema de la aplicacion
 @Composable
 fun LemacDataLabTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = false,
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {

@@ -5,17 +5,25 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.lemacdatalab.screens.LoginScreen
 import com.example.lemacdatalab.screens.MenuScreen
+import com.example.lemacdatalab.screens.MoodScreen
 
 // definicion de las rutas y conexion de pantallas
 @Composable
 fun NavGraph(navController: NavHostController) {
     NavHost(
         navController = navController,
-        startDestination = "menu"
+        startDestination = "login"
     ) {
         composable("login") {
-            Text("Pantalla de Login (Asignada a Persona 1)")
+            LoginScreen(
+                onIngresoExitoso = {
+                    navController.navigate("menu") {
+                        popUpTo("login") { inclusive = true }
+                    }
+                }
+            )
         }
 
         composable("menu") {
@@ -29,7 +37,7 @@ fun NavGraph(navController: NavHostController) {
         }
 
         composable("animo") {
-            Text("Pantalla de Ánimo (Asignada a Persona 3)")
+            MoodScreen(onBack = { navController.popBackStack() })
         }
 
         // rutas temporales
