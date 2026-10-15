@@ -5,11 +5,12 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.lemacdatalab.screens.DbtScreen
 import com.example.lemacdatalab.screens.LoginScreen
 import com.example.lemacdatalab.screens.MenuScreen
 import com.example.lemacdatalab.screens.MoodScreen
 
-// definicion de las rutas y conexion de pantallas
+// definición de las rutas y conexión de pantallas
 @Composable
 fun NavGraph(navController: NavHostController) {
     NavHost(
@@ -27,7 +28,7 @@ fun NavGraph(navController: NavHostController) {
         }
 
         composable("menu") {
-            // rutas de direccion de cada botón
+            // rutas de dirección de cada botón
             MenuScreen(
                 alNavegarNeurodesarrollo = { navController.navigate("neurodesarrollo") },
                 alNavegarDBT = { navController.navigate("dbt") },
@@ -40,13 +41,13 @@ fun NavGraph(navController: NavHostController) {
             MoodScreen(onBack = { navController.popBackStack() })
         }
 
-        // rutas temporales
-        composable("neurodesarrollo") {
-            Text("Pantalla de Neurodesarrollo (En construcción)")
+        composable("dbt") {
+            DbtScreen(onBack = { navController.popBackStack() })
         }
 
-        composable("dbt") {
-            Text("Pantalla de Diario DBT (En construcción)")
+        // rutas temporales restantes
+        composable("neurodesarrollo") {
+            Text("Pantalla de Neurodesarrollo (En construcción)")
         }
 
         composable("adicciones") {
