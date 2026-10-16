@@ -45,6 +45,7 @@ import com.example.lemacdatalab.native.vibrarAlGuardar
 @Composable
 fun MoodScreen(
     onBack: () -> Unit,
+    idRegistro: Int? = null, // null = registro nuevo; con valor = editar ese registro
     viewModel: MoodViewModel = viewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -52,13 +53,23 @@ fun MoodScreen(
     val scope = rememberCoroutineScope()
     val contextoLocal = LocalContext.current
 
-    // Al guardar: limpia el formulario y muestra el mensaje de éxito
+    // Modo edición: carga el registro en el formulario
+    LaunchedEffect(idRegistro) {
+        if (idRegistro != null) viewModel.cargarParaEditar(idRegistro)
+    }
+
+    // Al guardar: si se estaba editando vuelve al historial; si era nuevo, limpia el formulario y avisa
     LaunchedEffect(state.guardado) {
         if (state.guardado) {
+            val eraEdicion = state.esEdicion
             vibrarAlGuardar(contextoLocal, esError = false)
             viewModel.onGuardadoConsumido()
-            scope.launch {
-                snackbarHostState.showSnackbar("Evaluación guardada correctamente")
+            if (eraEdicion) {
+                onBack()
+            } else {
+                scope.launch {
+                    snackbarHostState.showSnackbar("Evaluación guardada correctamente")
+                }
             }
         }
     }
@@ -72,7 +83,7 @@ fun MoodScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Estado de Ánimo") },
+                title = { Text(if (state.esEdicion) "Editar Estado de Ánimo" else "Estado de Ánimo") },
                 navigationIcon = {
                     IconButton(
                         onClick = onBack,
@@ -102,7 +113,7 @@ fun MoodScreen(
                     .imePadding()            // sube el botón junto con el teclado
                     .padding(16.dp)
             ) {
-                Text("Guardar Evaluación")
+                Text(if (state.esEdicion) "Guardar Cambios" else "Guardar Evaluación")
             }
         }
     ) { padding ->

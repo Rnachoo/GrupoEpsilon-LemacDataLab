@@ -28,6 +28,26 @@ class MoodViewModel(application: Application) : AndroidViewModel(application) {
     // Evita guardar dos veces si el usuario toca el botón repetidamente
     private var guardando = false
 
+    private val idUsuario: Int
+        get() = SesionUsuario.idUsuario ?: UsuarioRepository.USUARIO_PRUEBA.idUsuario
+
+    // Modo edición: carga el registro existente en el formulario
+    fun cargarParaEditar(idRegistro: Int) {
+        // Si ya está cargado (ej. rotación de pantalla) no pisa lo que el usuario fue cambiando
+        if (_uiState.value.idRegistro == idRegistro) return
+        viewModelScope.launch {
+            val registro = repository.obtenerRegistro(idUsuario, idRegistro) ?: return@launch
+            _uiState.update {
+                it.copy(
+                    idRegistro = registro.idRegistro,
+                    nivel = registro.nivelIntensidad ?: it.nivel,
+                    contexto = ContextoMood.entries.firstOrNull { c -> c.etiqueta == registro.contexto },
+                    notas = registro.notasOpcionales.orEmpty()
+                )
+            }
+        }
+    }
+
     fun onNivelChange(valor: Int) {
         _uiState.update { it.copy(nivel = valor) }
     }
@@ -67,12 +87,22 @@ class MoodViewModel(application: Application) : AndroidViewModel(application) {
         guardando = true
         viewModelScope.launch {
             try {
-                repository.guardarMood(
-                    idUsuario = SesionUsuario.idUsuario ?: UsuarioRepository.USUARIO_PRUEBA.idUsuario,
-                    nivel = s.nivel,
-                    contexto = contexto.etiqueta,
-                    notas = s.notas.ifBlank { null }
-                )
+                val idEdicion = s.idRegistro
+                if (idEdicion != null) {
+                    repository.actualizarMood(
+                        idRegistro = idEdicion,
+                        nivel = s.nivel,
+                        contexto = contexto.etiqueta,
+                        notas = s.notas.ifBlank { null }
+                    )
+                } else {
+                    repository.guardarMood(
+                        idUsuario = idUsuario,
+                        nivel = s.nivel,
+                        contexto = contexto.etiqueta,
+                        notas = s.notas.ifBlank { null }
+                    )
+                }
                 _uiState.update { it.copy(guardado = true) }
             } finally {
                 guardando = false

@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -12,6 +13,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -22,10 +26,14 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -37,9 +45,42 @@ import com.example.lemacdatalab.viewmodel.HistorialViewModel
 @Composable
 fun HistorialScreen(
     onBack: () -> Unit,
+    onEditar: (RegistroHistorial) -> Unit,
     viewModel: HistorialViewModel = viewModel()
 ) {
     val registros by viewModel.registros.collectAsState()
+
+    // Registro pendiente de confirmar su eliminación (null = ningún diálogo abierto)
+    var registroAEliminar by remember { mutableStateOf<RegistroHistorial?>(null) }
+
+    registroAEliminar?.let { registro ->
+        AlertDialog(
+            onDismissRequest = { registroAEliminar = null },
+            title = { Text("Eliminar registro") },
+            text = {
+                Text(
+                    "Se eliminará el registro de ${tituloArea(registro.tipoArea)} del " +
+                            "${formatearFecha(registro.fechaHoraCreacion)}. " +
+                            "Esta acción no se puede deshacer."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.eliminar(registro.idRegistro)
+                        registroAEliminar = null
+                    }
+                ) {
+                    Text("Eliminar", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { registroAEliminar = null }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -97,7 +138,11 @@ fun HistorialScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(lista, key = { it.idRegistro }) { registro ->
-                        TarjetaRegistro(registro)
+                        TarjetaRegistro(
+                            registro = registro,
+                            onEditar = { onEditar(registro) },
+                            onEliminar = { registroAEliminar = registro }
+                        )
                     }
                 }
             }
@@ -106,35 +151,65 @@ fun HistorialScreen(
 }
 
 @Composable
-private fun TarjetaRegistro(registro: RegistroHistorial) {
+private fun TarjetaRegistro(
+    registro: RegistroHistorial,
+    onEditar: () -> Unit,
+    onEliminar: () -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+        Row(
+            modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp, end = 4.dp),
+            verticalAlignment = Alignment.Top
         ) {
-            Text(
-                text = tituloArea(registro.tipoArea),
-                style = MaterialTheme.typography.titleMedium
-            )
-            Text(
-                text = formatearFecha(registro.fechaHoraCreacion),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(top = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = tituloArea(registro.tipoArea),
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = formatearFecha(registro.fechaHoraCreacion),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
 
-            val detalle = detalleRegistro(registro)
-            if (detalle != null) {
-                Text(text = detalle, style = MaterialTheme.typography.bodyMedium)
+                val detalle = detalleRegistro(registro)
+                if (detalle != null) {
+                    Text(text = detalle, style = MaterialTheme.typography.bodyMedium)
+                }
+
+                registro.notasOpcionales?.let { notas ->
+                    Text(
+                        text = notas,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
-            registro.notasOpcionales?.let { notas ->
-                Text(
-                    text = notas,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+            // Solo Ánimo y DBT tienen formulario de edición por ahora
+            if (registro.tipoArea == "animo" || registro.tipoArea == "dbt") {
+                IconButton(onClick = onEditar) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Editar registro",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+
+            IconButton(onClick = onEliminar) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Eliminar registro",
+                    tint = MaterialTheme.colorScheme.error
                 )
             }
         }

@@ -9,5 +9,8 @@ data class MoodUiState(
     val contextoError: String? = null,
     val notasError: String? = null,
     val intentosFallidos: Int = 0,
-    val guardado: Boolean = false
-)
+    val guardado: Boolean = false,
+    val idRegistro: Int? = null
+) {
+    val esEdicion: Boolean get() = idRegistro != null
+}
