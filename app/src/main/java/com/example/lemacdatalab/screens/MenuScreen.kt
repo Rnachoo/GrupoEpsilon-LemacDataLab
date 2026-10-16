@@ -26,14 +26,15 @@ fun MenuScreen(
     alNavegarNeurodesarrollo: () -> Unit = {},
     alNavegarDBT: () -> Unit = {},
     alNavegarAnimo: () -> Unit = {},
-    alNavegarAdicciones: () -> Unit = {}
+    alNavegarAdicciones: () -> Unit = {},
+    alNavegarHistorial: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(FondoClaro)
     ) {
-        EncabezadoMenu(idUsuario = idUsuario)
+        EncabezadoMenu(idUsuario = idUsuario, alVerHistorial = alNavegarHistorial)
 
         Spacer(modifier = Modifier.height(24.dp))
 
@@ -95,7 +96,7 @@ fun MenuScreen(
 
 // dibuja la parte superior curva con los datos del usuario
 @Composable
-fun EncabezadoMenu(idUsuario: String) {
+fun EncabezadoMenu(idUsuario: String, alVerHistorial: () -> Unit = {}) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -172,7 +173,7 @@ fun EncabezadoMenu(idUsuario: String) {
                     }
 
                     Button(
-                        onClick = { /* Pendiente: Acción historial */ },
+                        onClick = alVerHistorial,
                         colors = ButtonDefaults.buttonColors(containerColor = SuperficieBlanca.copy(alpha = 0.3f)),
                         shape = RoundedCornerShape(20.dp),
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
