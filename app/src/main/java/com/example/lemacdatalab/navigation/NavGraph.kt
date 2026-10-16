@@ -6,6 +6,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.lemacdatalab.screens.DbtScreen
+import com.example.lemacdatalab.screens.HistorialScreen
 import com.example.lemacdatalab.screens.LoginScreen
 import com.example.lemacdatalab.screens.MenuScreen
 import com.example.lemacdatalab.screens.MoodScreen
@@ -28,12 +29,12 @@ fun NavGraph(navController: NavHostController) {
         }
 
         composable("menu") {
-            // rutas de dirección de cada botón
             MenuScreen(
                 alNavegarNeurodesarrollo = { navController.navigate("neurodesarrollo") },
                 alNavegarDBT = { navController.navigate("dbt") },
                 alNavegarAnimo = { navController.navigate("animo") },
-                alNavegarAdicciones = { navController.navigate("adicciones") }
+                alNavegarAdicciones = { navController.navigate("adicciones") },
+                alNavegarHistorial = { navController.navigate("historial") }
             )
         }
 
@@ -43,6 +44,10 @@ fun NavGraph(navController: NavHostController) {
 
         composable("dbt") {
             DbtScreen(onBack = { navController.popBackStack() })
+        }
+
+        composable("historial") {
+            HistorialScreen(onBack = { navController.popBackStack() })
         }
 
         // rutas temporales restantes
