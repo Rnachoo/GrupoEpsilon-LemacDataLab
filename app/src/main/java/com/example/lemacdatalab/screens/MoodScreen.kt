@@ -38,6 +38,8 @@ import com.example.lemacdatalab.components.IntensidadCard
 import com.example.lemacdatalab.model.ContextoMood
 import com.example.lemacdatalab.viewmodel.MoodViewModel
 import kotlinx.coroutines.launch
+import androidx.compose.ui.platform.LocalContext
+import com.example.lemacdatalab.native.vibrarAlGuardar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,14 +50,22 @@ fun MoodScreen(
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val contextoLocal = LocalContext.current
 
     // Al guardar: limpia el formulario y muestra el mensaje de éxito
     LaunchedEffect(state.guardado) {
         if (state.guardado) {
+            vibrarAlGuardar(contextoLocal, esError = false)
             viewModel.onGuardadoConsumido()
             scope.launch {
                 snackbarHostState.showSnackbar("Evaluación guardada correctamente")
             }
+        }
+    }
+
+    LaunchedEffect(state.intentosFallidos) {
+        if (state.intentosFallidos > 0) {
+            vibrarAlGuardar(contextoLocal, esError = true)
         }
     }
 

@@ -48,7 +48,8 @@ class MoodViewModel : ViewModel() {
                     contextoError = if (contexto == null)
                         "Selecciona un contexto detonante" else null,
                     notasError = if (s.notas.length > MAX_NOTAS)
-                        "Máximo $MAX_NOTAS caracteres" else null
+                        "Máximo $MAX_NOTAS caracteres" else null,
+                    intentosFallidos = it.intentosFallidos + 1
                 )
             }
             return

@@ -8,5 +8,6 @@ data class MoodUiState(
     val notas: String = "",
     val contextoError: String? = null,
     val notasError: String? = null,
+    val intentosFallidos: Int = 0,
     val guardado: Boolean = false
 )
