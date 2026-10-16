@@ -36,7 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.lemacdatalab.components.ContextoChip
 import com.example.lemacdatalab.components.IntensidadCard
-import com.example.lemacdatalab.hardware.vibrarAlGuardar
+import com.example.lemacdatalab.native.vibrarAlGuardar
 import com.example.lemacdatalab.model.HabilidadDbt
 import com.example.lemacdatalab.viewmodel.DbtViewModel
 import kotlinx.coroutines.launch

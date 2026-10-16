@@ -1,4 +1,4 @@
-package com.example.lemacdatalab.hardware
+package com.example.lemacdatalab.native
 
 import android.content.Context
 import android.os.Build
