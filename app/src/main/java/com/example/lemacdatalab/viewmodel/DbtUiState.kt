@@ -9,5 +9,8 @@ data class DbtUiState(
     val notas: String = "",
     val habilidadError: String? = null,
     val notasError: String? = null,
-    val guardado: Boolean = false
-)
+    val guardado: Boolean = false,
+    val idRegistro: Int? = null
+) {
+    val esEdicion: Boolean get() = idRegistro != null
+}

@@ -45,12 +45,18 @@ import kotlinx.coroutines.launch
 @Composable
 fun DbtScreen(
     onBack: () -> Unit,
+    idRegistro: Int? = null, // null = registro nuevo; con valor = editar ese registro
     viewModel: DbtViewModel = viewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val contextoLocal = LocalContext.current // Necesario para hacer vibrar el teléfono
+
+    // Modo edicion: carga el registro en el formulario
+    LaunchedEffect(idRegistro) {
+        if (idRegistro != null) viewModel.cargarParaEditar(idRegistro)
+    }
 
     // Efecto 1: exito al guardar
     LaunchedEffect(state.guardado) {
@@ -76,7 +82,7 @@ fun DbtScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Diario DBT") },
+                title = { Text(if (state.esEdicion) "Editar Diario DBT" else "Diario DBT") },
                 navigationIcon = {
                     IconButton(
                         onClick = onBack,
@@ -106,7 +112,7 @@ fun DbtScreen(
                     .imePadding()
                     .padding(16.dp)
             ) {
-                Text("Guardar Registro DBT")
+                Text(if (state.esEdicion) "Guardar Cambios" else "Guardar Registro DBT")
             }
         }
     ) { padding ->

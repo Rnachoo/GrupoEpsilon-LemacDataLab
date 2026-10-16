@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -44,6 +45,7 @@ import com.example.lemacdatalab.viewmodel.HistorialViewModel
 @Composable
 fun HistorialScreen(
     onBack: () -> Unit,
+    onEditar: (RegistroHistorial) -> Unit,
     viewModel: HistorialViewModel = viewModel()
 ) {
     val registros by viewModel.registros.collectAsState()
@@ -138,6 +140,7 @@ fun HistorialScreen(
                     items(lista, key = { it.idRegistro }) { registro ->
                         TarjetaRegistro(
                             registro = registro,
+                            onEditar = { onEditar(registro) },
                             onEliminar = { registroAEliminar = registro }
                         )
                     }
@@ -150,6 +153,7 @@ fun HistorialScreen(
 @Composable
 private fun TarjetaRegistro(
     registro: RegistroHistorial,
+    onEditar: () -> Unit,
     onEliminar: () -> Unit
 ) {
     Card(
@@ -186,6 +190,17 @@ private fun TarjetaRegistro(
                         text = notas,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            // Solo Ánimo y DBT tienen formulario de edición por ahora
+            if (registro.tipoArea == "animo" || registro.tipoArea == "dbt") {
+                IconButton(onClick = onEditar) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Editar registro",
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 }
             }

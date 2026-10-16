@@ -28,6 +28,26 @@ class DbtViewModel(application: Application) : AndroidViewModel(application) {
     // Evita guardar dos veces si el usuario toca el boton repetidamente
     private var guardando = false
 
+    private val idUsuario: Int
+        get() = SesionUsuario.idUsuario ?: UsuarioRepository.USUARIO_PRUEBA.idUsuario
+
+    // Modo edicion: carga el registro existente en el formulario
+    fun cargarParaEditar(idRegistro: Int) {
+        // Si ya esta cargado (ej. rotacion de pantalla) no pisa lo que el usuario fue cambiando
+        if (_uiState.value.idRegistro == idRegistro) return
+        viewModelScope.launch {
+            val registro = repository.obtenerRegistro(idUsuario, idRegistro) ?: return@launch
+            _uiState.update {
+                it.copy(
+                    idRegistro = registro.idRegistro,
+                    nivelImpulso = registro.nivelImpulso ?: it.nivelImpulso,
+                    habilidad = HabilidadDbt.entries.firstOrNull { h -> h.etiqueta == registro.habilidad },
+                    notas = registro.notasOpcionales.orEmpty()
+                )
+            }
+        }
+    }
+
     fun onNivelChange(valor: Int) {
         _uiState.update { it.copy(nivelImpulso = valor) }
     }
@@ -73,12 +93,22 @@ class DbtViewModel(application: Application) : AndroidViewModel(application) {
         guardando = true
         viewModelScope.launch {
             try {
-                repository.guardarDbt(
-                    idUsuario = SesionUsuario.idUsuario ?: UsuarioRepository.USUARIO_PRUEBA.idUsuario,
-                    habilidad = habilidad.etiqueta,
-                    nivelImpulso = state.nivelImpulso,
-                    notas = state.notas.ifBlank { null }
-                )
+                val idEdicion = state.idRegistro
+                if (idEdicion != null) {
+                    repository.actualizarDbt(
+                        idRegistro = idEdicion,
+                        habilidad = habilidad.etiqueta,
+                        nivelImpulso = state.nivelImpulso,
+                        notas = state.notas.ifBlank { null }
+                    )
+                } else {
+                    repository.guardarDbt(
+                        idUsuario = idUsuario,
+                        habilidad = habilidad.etiqueta,
+                        nivelImpulso = state.nivelImpulso,
+                        notas = state.notas.ifBlank { null }
+                    )
+                }
                 _uiState.update { it.copy(guardado = true) }
             } finally {
                 guardando = false
