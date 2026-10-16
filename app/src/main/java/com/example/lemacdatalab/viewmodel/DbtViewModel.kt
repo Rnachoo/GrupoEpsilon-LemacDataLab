@@ -4,25 +4,29 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.lemacdatalab.data.AppDatabase
+import com.example.lemacdatalab.data.RegistroRepository
+import com.example.lemacdatalab.data.RoomRegistroRepository
 import com.example.lemacdatalab.data.SesionUsuario
+import com.example.lemacdatalab.data.UsuarioRepository
 import com.example.lemacdatalab.model.HabilidadDbt
-import com.example.lemacdatalab.model.RegistroMaestro
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 class DbtViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(DbtUiState())
     val uiState: StateFlow<DbtUiState> = _uiState.asStateFlow()
 
-    // Conexion a la persistencia local (Room)
-    private val registroDao = AppDatabase.getDatabase(application).registroMaestroDao()
+    // Persistencia local (Room) a traves del repositorio
+    private val repository: RegistroRepository = RoomRegistroRepository(
+        AppDatabase.getDatabase(application).registroDetalleDao()
+    )
+
+    // Evita guardar dos veces si el usuario toca el boton repetidamente
+    private var guardando = false
 
     fun onNivelChange(valor: Int) {
         _uiState.update { it.copy(nivelImpulso = valor) }
@@ -38,6 +42,7 @@ class DbtViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun guardar() {
+        if (guardando) return
         val state = _uiState.value
         val habilidadSeleccionada = state.habilidad
 
@@ -63,22 +68,21 @@ class DbtViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
 
-        // Si pasa las validaciones, guardamos en el Room de forma asincrona
+        // Si pasa las validaciones, guardamos en Room de forma asincrona
+        val habilidad = habilidadSeleccionada ?: return
+        guardando = true
         viewModelScope.launch {
-            val idUsuarioActual = SesionUsuario.idUsuario ?: 1
-            val fechaHora = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
-
-            val registro = RegistroMaestro(
-                idRegistro = 0, // 0 para que el Room autogenere el ID
-                idUsuario = idUsuarioActual,
-                tipoArea = "dbt",
-                fechaHoraCreacion = fechaHora,
-                notasOpcionales = "Habilidad: ${habilidadSeleccionada!!.etiqueta} | Nivel Impulso: ${state.nivelImpulso} | Notas: ${state.notas}"
-            )
-
-            registroDao.insertar(registro)
-
-            _uiState.update { it.copy(guardado = true) }
+            try {
+                repository.guardarDbt(
+                    idUsuario = SesionUsuario.idUsuario ?: UsuarioRepository.USUARIO_PRUEBA.idUsuario,
+                    habilidad = habilidad.etiqueta,
+                    nivelImpulso = state.nivelImpulso,
+                    notas = state.notas.ifBlank { null }
+                )
+                _uiState.update { it.copy(guardado = true) }
+            } finally {
+                guardando = false
+            }
         }
     }
 

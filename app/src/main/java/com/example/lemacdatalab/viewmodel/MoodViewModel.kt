@@ -1,24 +1,32 @@
 package com.example.lemacdatalab.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.lemacdatalab.data.AppDatabase
+import com.example.lemacdatalab.data.RegistroRepository
+import com.example.lemacdatalab.data.RoomRegistroRepository
+import com.example.lemacdatalab.data.SesionUsuario
+import com.example.lemacdatalab.data.UsuarioRepository
 import com.example.lemacdatalab.model.ContextoMood
-import com.example.lemacdatalab.model.MoodDetalle
-import com.example.lemacdatalab.model.RegistroMaestro
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import kotlinx.coroutines.launch
 
-class MoodViewModel : ViewModel() {
+class MoodViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(MoodUiState())
     val uiState: StateFlow<MoodUiState> = _uiState.asStateFlow()
 
-    private val registros = mutableListOf<Pair<RegistroMaestro, MoodDetalle>>()
-    private var nextId = 1
+    // Persistencia local (Room) a través del repositorio
+    private val repository: RegistroRepository = RoomRegistroRepository(
+        AppDatabase.getDatabase(application).registroDetalleDao()
+    )
+
+    // Evita guardar dos veces si el usuario toca el botón repetidamente
+    private var guardando = false
 
     fun onNivelChange(valor: Int) {
         _uiState.update { it.copy(nivel = valor) }
@@ -38,7 +46,8 @@ class MoodViewModel : ViewModel() {
         }
     }
 
-    fun guardar(idUsuario: Int = 1) {
+    fun guardar() {
+        if (guardando) return
         val s = _uiState.value
         val contexto = s.contexto
 
@@ -55,24 +64,20 @@ class MoodViewModel : ViewModel() {
             return
         }
 
-        val id = nextId++
-        val fechaHora = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-            .format(Date())
-
-        registros.add(
-            RegistroMaestro(
-                idRegistro = id,
-                idUsuario = idUsuario,
-                tipoArea = "animo",
-                fechaHoraCreacion = fechaHora,
-                notasOpcionales = s.notas.ifBlank { null }
-            ) to MoodDetalle(
-                idRegistro = id,
-                nivelIntensidad = s.nivel,
-                contexto = contexto.etiqueta
-            )
-        )
-        _uiState.update { it.copy(guardado = true) }
+        guardando = true
+        viewModelScope.launch {
+            try {
+                repository.guardarMood(
+                    idUsuario = SesionUsuario.idUsuario ?: UsuarioRepository.USUARIO_PRUEBA.idUsuario,
+                    nivel = s.nivel,
+                    contexto = contexto.etiqueta,
+                    notas = s.notas.ifBlank { null }
+                )
+                _uiState.update { it.copy(guardado = true) }
+            } finally {
+                guardando = false
+            }
+        }
     }
 
     fun onGuardadoConsumido() {
