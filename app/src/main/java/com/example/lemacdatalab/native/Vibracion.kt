@@ -37,3 +37,23 @@ fun vibrarAlGuardar(context: Context, esError: Boolean = false) {
         }
     }
 }
+// Pulso muy corto y suave para el slider (un "tic" por cada valor)
+fun vibrarTic(context: Context) {
+    val vibrador = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        val manager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+        manager.defaultVibrator
+    } else {
+        @Suppress("DEPRECATION")
+        context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+    }
+
+    if (!vibrador.hasVibrator()) return
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        // 20 ms con amplitud media-baja: se siente como un clic, no como un zumbido
+        vibrador.vibrate(VibrationEffect.createOneShot(20, 80))
+    } else {
+        @Suppress("DEPRECATION")
+        vibrador.vibrate(20)
+    }
+}
