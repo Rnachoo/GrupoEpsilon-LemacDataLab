@@ -1,5 +1,6 @@
-package com.example.lemacdatalab.data
+package com.example.lemacdatalab.data.repository
 
+import com.example.lemacdatalab.data.dao.UsuarioDao
 import com.example.lemacdatalab.model.Usuario
 
 class UsuarioRepository(private val usuarioDao: UsuarioDao) {

@@ -1,5 +1,6 @@
-package com.example.lemacdatalab.data
+package com.example.lemacdatalab.data.repository
 
+import com.example.lemacdatalab.data.dao.RegistroDetalleDao
 import com.example.lemacdatalab.model.RegistroHistorial
 import com.example.lemacdatalab.model.RegistroMaestro
 import kotlinx.coroutines.flow.Flow

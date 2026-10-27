@@ -1,4 +1,4 @@
-package com.example.lemacdatalab.data
+package com.example.lemacdatalab.data.dao
 
 import androidx.room.Dao
 import androidx.room.Insert

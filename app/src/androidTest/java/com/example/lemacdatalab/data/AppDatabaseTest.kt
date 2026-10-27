@@ -3,6 +3,7 @@ package com.example.lemacdatalab.data
 import androidx.room.Room
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.example.lemacdatalab.data.repository.UsuarioRepository
 import com.example.lemacdatalab.model.RegistroMaestro
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking

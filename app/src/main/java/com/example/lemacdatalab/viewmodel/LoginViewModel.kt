@@ -5,7 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.lemacdatalab.data.AppDatabase
 import com.example.lemacdatalab.data.SesionUsuario
-import com.example.lemacdatalab.data.UsuarioRepository
+import com.example.lemacdatalab.data.repository.UsuarioRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

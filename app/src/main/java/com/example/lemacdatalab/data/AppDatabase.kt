@@ -4,6 +4,9 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.example.lemacdatalab.data.dao.RegistroDetalleDao
+import com.example.lemacdatalab.data.dao.RegistroMaestroDao
+import com.example.lemacdatalab.data.dao.UsuarioDao
 import com.example.lemacdatalab.model.DbtDetalle
 import com.example.lemacdatalab.model.MoodDetalle
 import com.example.lemacdatalab.model.RegistroMaestro
