@@ -314,7 +314,7 @@ private fun TarjetaRegistro(
                     }
 
                     // Botones de acción suaves
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         if (registro.tipoArea == "animo" || registro.tipoArea == "dbt") {
                             IconButton(
                                 onClick = onEditar,
