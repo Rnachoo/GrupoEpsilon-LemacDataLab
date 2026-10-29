@@ -4,16 +4,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
-import androidx.navigation.navArgument
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
 import com.example.lemacdatalab.screens.DbtScreen
+import com.example.lemacdatalab.screens.EditorScreen
 import com.example.lemacdatalab.screens.HistorialScreen
 import com.example.lemacdatalab.screens.LoginScreen
 import com.example.lemacdatalab.screens.MenuScreen
 import com.example.lemacdatalab.screens.MoodScreen
 
-// definición de las rutas y conexión de pantallas
+// Definición de las rutas y conexión de pantallas
 @Composable
 fun NavGraph(navController: NavHostController) {
     NavHost(
@@ -40,7 +41,6 @@ fun NavGraph(navController: NavHostController) {
             )
         }
 
-        // idRegistro es opcional: sin él es un registro nuevo, con él se edita ese registro
         composable(
             route = "animo?idRegistro={idRegistro}",
             arguments = listOf(navArgument("idRegistro") {
@@ -81,7 +81,18 @@ fun NavGraph(navController: NavHostController) {
             )
         }
 
-        // rutas temporales restantes
+        // Panel de Editor de Contenidos
+        composable("editor") {
+            EditorScreen(
+                onCerrarSesion = {
+                    navController.navigate("login") {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // Rutas temporales restantes
         composable("neurodesarrollo") {
             Text("Pantalla de Neurodesarrollo (En construcción)")
         }
