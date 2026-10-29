@@ -17,12 +17,14 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.lemacdatalab.data.SesionUsuario
 import com.example.lemacdatalab.ui.theme.*
 
 // pantalla principal del menu (recibe eventos de navegación como parámetros)
 @Composable
 fun MenuScreen(
-    idUsuario: String = "AX-7B99",
+    // Ahora lee dinámicamente el ID del usuario que inició sesión en SesionUsuario
+    idUsuario: String = SesionUsuario.usuarioActual?.identificadorSintetico ?: "AX-7B99",
     alNavegarNeurodesarrollo: () -> Unit = {},
     alNavegarDBT: () -> Unit = {},
     alNavegarAnimo: () -> Unit = {},
@@ -168,7 +170,6 @@ fun EncabezadoMenu(idUsuario: String, alVerHistorial: () -> Unit = {}) {
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(text = "Cumplimiento actual", color = SuperficieBlanca, fontWeight = FontWeight.Bold)
-                            Text(text = "5 días de registro continuo", color = SuperficieBlanca.copy(alpha = 0.8f), fontSize = 12.sp)
                         }
                     }
 

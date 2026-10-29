@@ -65,7 +65,7 @@ fun IdSinteticoCard(
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    text = "ID de prueba: AX-7B99",
+                    text = "Prueba: AX-7B99 / BZ-4M12",
                     fontSize = 11.sp,
                     color = TextoSecundario
                 )
@@ -74,7 +74,7 @@ fun IdSinteticoCard(
             TextField(
                 value = valor,
                 onValueChange = onValorChange,
-                placeholder = { Text("Ej. AX-7B99", color = TextoSecundario) },
+                placeholder = { Text("Ej. AX-7B99 o BZ-4M12", color = TextoSecundario) },
                 singleLine = true,
                 isError = error != null,
                 shape = RoundedCornerShape(12.dp),

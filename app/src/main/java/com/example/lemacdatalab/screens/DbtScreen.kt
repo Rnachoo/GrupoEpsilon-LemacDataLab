@@ -109,13 +109,6 @@ fun DbtScreen(
         }
     }
 
-    // Error de validación: vibración doble de alerta
-    LaunchedEffect(uiState.habilidadError, uiState.notasError) {
-        if (uiState.habilidadError != null || uiState.notasError != null) {
-            vibrarAlGuardar(context, esError = true)
-        }
-    }
-
     Scaffold(
         containerColor = LemacSurfaceWarm,
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -294,7 +287,17 @@ fun DbtScreen(
 
             // Siempre habilitado: guardar() valida y muestra los errores
             Button(
-                onClick = { viewModel.guardar() },
+                onClick = {
+                    // 1. Validamos al instante si falta información requerida para forzar la vibración de error.
+                    // Al estar aquí, se ejecuta incondicionalmente en CADA pulsación.
+                    val hayError = uiState.habilidad == null || uiState.notasError != null
+                    if (hayError) {
+                        vibrarAlGuardar(context, esError = true)
+                    }
+
+                    // 2. Ejecutar la función de guardado
+                    viewModel.guardar()
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(54.dp),

@@ -97,26 +97,17 @@ fun MoodScreen(
         if (idRegistro != null) viewModel.cargarParaEditar(idRegistro)
     }
 
-    // Al guardar: si se estaba editando vuelve al historial; si era nuevo, limpia el formulario y avisa
+    // Al guardar: limpia el estado, avisa y redirige siempre hacia atrás
     LaunchedEffect(state.guardado) {
         if (state.guardado) {
-            val eraEdicion = state.esEdicion
             vibrarAlGuardar(context, esError = false)
-            viewModel.onGuardadoConsumido()
-            if (eraEdicion) {
-                onBack()
-            } else {
-                scope.launch {
-                    snackbarHostState.showSnackbar("Evaluación guardada correctamente")
-                }
+            scope.launch {
+                snackbarHostState.showSnackbar(
+                    if (state.esEdicion) "Cambios guardados correctamente" else "Evaluación guardada correctamente"
+                )
             }
-        }
-    }
-
-    // Vibración doble cuando falla la validación
-    LaunchedEffect(state.intentosFallidos) {
-        if (state.intentosFallidos > 0) {
-            vibrarAlGuardar(context, esError = true)
+            viewModel.onGuardadoConsumido()
+            onBack() // <-- AHORA SIEMPRE REGRESA AL MENÚ, EVITANDO DUPLICADOS
         }
     }
 
@@ -298,9 +289,17 @@ fun MoodScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Siempre habilitado: si falta el contexto, guardar() muestra el error y vibra
+            // Siempre habilitado: evaluar si hay error para vibrar al instante
             Button(
-                onClick = { viewModel.guardar() },
+                onClick = {
+                    // Evaluación instantánea en cada tap para garantizar la vibración
+                    val hayError = state.contexto == null || state.notasError != null
+                    if (hayError) {
+                        vibrarAlGuardar(context, esError = true)
+                    }
+
+                    viewModel.guardar()
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(54.dp),
