@@ -7,6 +7,9 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.example.lemacdatalab.data.SesionUsuario
+import com.example.lemacdatalab.model.RolUsuario
+import com.example.lemacdatalab.screens.AdminScreen
 import com.example.lemacdatalab.screens.DbtScreen
 import com.example.lemacdatalab.screens.EditorScreen
 import com.example.lemacdatalab.screens.HistorialScreen
@@ -23,12 +26,32 @@ fun NavGraph(navController: NavHostController) {
     ) {
         composable("login") {
             LoginScreen(
-                onIngresoExitoso = {
-                    navController.navigate("menu") {
+                onIngresoExitoso = { rol ->
+                    val destino = when (rol) {
+                        RolUsuario.ADMIN -> "admin"
+                        RolUsuario.EDITOR -> "editor"
+                        RolUsuario.USUARIO -> "menu"
+                    }
+                    navController.navigate(destino) {
                         popUpTo("login") { inclusive = true }
                     }
                 }
             )
+        }
+
+        composable("admin") {
+            AdminScreen(
+                onCerrarSesion = {
+                    SesionUsuario.cerrar()
+                    navController.navigate("login") {
+                        popUpTo("admin") { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable("editor") {
+            Text("Editor (en construcción)") // placeholder hasta que llegue EditorScreen
         }
 
         composable("menu") {

@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.lemacdatalab.data.AppDatabase
 import com.example.lemacdatalab.data.SesionUsuario
 import com.example.lemacdatalab.data.repository.UsuarioRepository
+import com.example.lemacdatalab.model.RolUsuario
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,7 +22,7 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
         AppDatabase.getDatabase(application).usuarioDao()
     )
 
-    // Asegura que el usuario de prueba exista antes de cualquier ingreso
+    // Asegura que las cuentas sintéticas existan antes de cualquier ingreso
     private val siembra = viewModelScope.launch {
         repository.sembrarUsuarioPrueba()
     }
@@ -43,7 +44,7 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
         val id = s.idSintetico.trim()
         val error = when {
             id.isBlank() -> "El ID sintético es obligatorio"
-            !FORMATO_ID.matches(id) -> "Formato inválido. Usa el formato AX-7B99"
+            !FORMATO_ID.matches(id) -> "Formato inválido. Ejemplo: AX-7B99"
             else -> null
         }
         if (error != null) {
@@ -53,13 +54,15 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
         viewModelScope.launch {
             siembra.join()
+            // El ID debe existir exactamente; el rol se deduce de su prefijo
             val usuario = repository.buscarPorIdentificador(id)
             if (usuario == null) {
                 _uiState.update { it.copy(idError = "ID no registrado en el sistema") }
                 return@launch
             }
             SesionUsuario.iniciar(usuario)
-            _uiState.update { it.copy(ingresado = true) }
+            val rol = RolUsuario.detectarRol(usuario.identificadorSintetico)
+            _uiState.update { it.copy(ingresado = true, rol = rol) }
         }
     }
 
@@ -68,7 +71,7 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     companion object {
-        const val MAX_ID = 7
-        private val FORMATO_ID = Regex("^[A-Z]{2}-[A-Z0-9]{4}$")
+        const val MAX_ID = 8 // "ADM-0001" tiene 8 caracteres
+        private val FORMATO_ID = Regex("^[A-Z]{2,3}-[A-Z0-9]{4}$")
     }
 }

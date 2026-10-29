@@ -13,6 +13,8 @@ import com.example.lemacdatalab.model.DbtDetalle
 import com.example.lemacdatalab.model.MoodDetalle
 import com.example.lemacdatalab.model.RegistroMaestro
 import com.example.lemacdatalab.model.Usuario
+import com.example.lemacdatalab.data.dao.AdminDao
+
 
 @Database(
     entities = [Usuario::class, RegistroMaestro::class, MoodDetalle::class, DbtDetalle::class, ContenidoEducativo::class],
@@ -24,8 +26,9 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun usuarioDao(): UsuarioDao
     abstract fun registroMaestroDao(): RegistroMaestroDao
     abstract fun registroDetalleDao(): RegistroDetalleDao
-
     abstract fun contenidoDao(): ContenidoDao
+
+    abstract fun adminDao(): AdminDao
 
     companion object {
         @Volatile

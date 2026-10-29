@@ -3,6 +3,7 @@ package com.example.lemacdatalab.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.outlined.Shield
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -38,6 +40,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.lemacdatalab.components.DeslindeCard
 import com.example.lemacdatalab.components.IdSinteticoCard
+import com.example.lemacdatalab.model.RolUsuario
 import com.example.lemacdatalab.ui.theme.FondoClaro
 import com.example.lemacdatalab.ui.theme.SuperficieBlanca
 import com.example.lemacdatalab.ui.theme.TextoPrincipal
@@ -49,16 +52,17 @@ private val BotonDeshabilitado = Color(0xFFE4E4E0)
 
 @Composable
 fun LoginScreen(
-    onIngresoExitoso: () -> Unit,
+    onIngresoExitoso: (RolUsuario) -> Unit,
     viewModel: LoginViewModel = viewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
 
-    // Al autenticar: limpia el formulario y avanza al menú
+    // Al autenticar: guarda el rol, limpia el formulario y avanza según el rol
     LaunchedEffect(state.ingresado) {
         if (state.ingresado) {
+            val rol = state.rol
             viewModel.onIngresoConsumido()
-            onIngresoExitoso()
+            onIngresoExitoso(rol)
         }
     }
 
@@ -140,7 +144,32 @@ fun LoginScreen(
                 )
             }
 
+            // Acceso rápido (modo demo): solo autocompleta el ID
+            Text(
+                text = "Acceso rápido (modo demo)",
+                fontSize = 12.sp,
+                color = TextoSecundario
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                RolUsuario.entries.forEach { rol ->
+                    AssistChip(
+                        onClick = { viewModel.onIdChange(rol.idDemo) },
+                        label = { Text(etiquetaChip(rol)) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
             Spacer(Modifier.height(8.dp))
         }
     }
+}
+
+private fun etiquetaChip(rol: RolUsuario): String = when (rol) {
+    RolUsuario.USUARIO -> "Usuario"
+    RolUsuario.ADMIN -> "Admin"
+    RolUsuario.EDITOR -> "Editor"
 }

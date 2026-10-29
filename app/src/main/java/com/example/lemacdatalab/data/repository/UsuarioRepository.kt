@@ -5,9 +5,9 @@ import com.example.lemacdatalab.model.Usuario
 
 class UsuarioRepository(private val usuarioDao: UsuarioDao) {
 
-    // Inserta el usuario de prueba si aún no existe
+    // Inserta las cuentas sintéticas si aún no existen
     suspend fun sembrarUsuarioPrueba() {
-        usuarioDao.insertar(USUARIO_PRUEBA)
+        USUARIOS_SINTETICOS.forEach { usuarioDao.insertar(it) }
     }
 
     suspend fun buscarPorIdentificador(identificador: String): Usuario? =
@@ -18,6 +18,13 @@ class UsuarioRepository(private val usuarioDao: UsuarioDao) {
             idUsuario = 1,
             identificadorSintetico = "AX-7B99",
             fechaCreacion = "2026-10-12"
+        )
+
+        private val USUARIOS_SINTETICOS = listOf(
+            USUARIO_PRUEBA,
+            Usuario(idUsuario = 2, identificadorSintetico = "ADM-0001", fechaCreacion = "2026-10-12"),
+            Usuario(idUsuario = 3, identificadorSintetico = "EDT-0001", fechaCreacion = "2026-10-12"),
+            Usuario(idUsuario = 4, identificadorSintetico = "BZ-4M12", fechaCreacion = "2026-10-12")
         )
     }
 }
