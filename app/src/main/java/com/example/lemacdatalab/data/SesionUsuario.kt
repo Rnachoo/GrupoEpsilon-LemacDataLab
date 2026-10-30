@@ -1,5 +1,7 @@
 package com.example.lemacdatalab.data
 
+import android.content.Context
+import androidx.core.content.edit
 import com.example.lemacdatalab.model.RolUsuario
 import com.example.lemacdatalab.model.Usuario
 
@@ -25,4 +27,18 @@ object SesionUsuario {
     fun cerrar() {
         usuarioActual = null
     }
+
+    // la guía de bienvenida se recuerda en el dispositivo aunque se cierre la app
+    fun onboardingVisto(context: Context): Boolean =
+        preferencias(context).getBoolean(ONBOARDING_VISTO, false)
+
+    fun marcarOnboardingVisto(context: Context) {
+        preferencias(context).edit { putBoolean(ONBOARDING_VISTO, true) }
+    }
+
+    private fun preferencias(context: Context) =
+        context.getSharedPreferences(PREFERENCIAS, Context.MODE_PRIVATE)
+
+    private const val PREFERENCIAS = "lemac_preferencias"
+    private const val ONBOARDING_VISTO = "onboarding_visto"
 }

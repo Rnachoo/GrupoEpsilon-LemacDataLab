@@ -9,9 +9,12 @@ import com.example.lemacdatalab.data.repository.RoomRegistroRepository
 import com.example.lemacdatalab.data.SesionUsuario
 import com.example.lemacdatalab.data.repository.UsuarioRepository
 import com.example.lemacdatalab.model.ContextoMood
+import com.example.lemacdatalab.model.calcularRacha
+import com.example.lemacdatalab.native.NotificacionHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -102,6 +105,9 @@ class MoodViewModel(application: Application) : AndroidViewModel(application) {
                         contexto = contexto.etiqueta,
                         notas = s.notas.ifBlank { null }
                     )
+                    // aviso nativo con la racha ya actualizada (solo en registros nuevos)
+                    val racha = calcularRacha(repository.observarHistorial(idUsuario).first())
+                    NotificacionHelper.mostrarAlertaRegistroGuardado(getApplication(), "Estado de Ánimo", racha)
                 }
                 _uiState.update { it.copy(guardado = true) }
             } finally {
