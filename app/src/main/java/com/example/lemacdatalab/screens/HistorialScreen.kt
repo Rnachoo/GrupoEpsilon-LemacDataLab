@@ -413,7 +413,7 @@ private fun TarjetaRegistro(
     }
 }
 
-private fun tituloArea(tipoArea: String): String = when (tipoArea) {
+fun tituloArea(tipoArea: String): String = when (tipoArea) {
     "animo" -> "Estado de Ánimo"
     "dbt" -> "Diario DBT"
     "neurodesarrollo" -> "Neurodesarrollo"
