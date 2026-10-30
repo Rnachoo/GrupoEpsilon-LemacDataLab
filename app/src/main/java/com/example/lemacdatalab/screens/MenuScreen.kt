@@ -10,15 +10,26 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.lemacdatalab.components.ContenidoDiarioCard
+import com.example.lemacdatalab.components.LecturaModalDialog
 import com.example.lemacdatalab.data.SesionUsuario
+import com.example.lemacdatalab.native.compartirLecturaDiaria
 import com.example.lemacdatalab.ui.theme.*
+import com.example.lemacdatalab.viewmodel.ContenidoViewModel
 
 // pantalla principal del menu (recibe eventos de navegación como parámetros)
 @Composable
@@ -29,8 +40,15 @@ fun MenuScreen(
     alNavegarDBT: () -> Unit = {},
     alNavegarAnimo: () -> Unit = {},
     alNavegarAdicciones: () -> Unit = {},
-    alNavegarHistorial: () -> Unit = {}
+    alNavegarHistorial: () -> Unit = {},
+    viewModel: ContenidoViewModel = viewModel(factory = ContenidoViewModel.Factory)
 ) {
+    val contenidos by viewModel.contenidos.collectAsState()
+    // la consulta deja primero la lectura marcada; si no hay ninguna, queda la más reciente
+    val lecturaDiaria = contenidos.firstOrNull()
+    var lecturaAbierta by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -92,7 +110,24 @@ fun MenuScreen(
                     alHacerClic = alNavegarAdicciones
                 )
             }
+            if (lecturaDiaria != null) {
+                item {
+                    ContenidoDiarioCard(
+                        contenido = lecturaDiaria,
+                        onClick = { lecturaAbierta = true },
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            }
         }
+    }
+
+    if (lecturaAbierta && lecturaDiaria != null) {
+        LecturaModalDialog(
+            contenido = lecturaDiaria,
+            onCerrar = { lecturaAbierta = false },
+            onCompartir = { compartirLecturaDiaria(context, lecturaDiaria) }
+        )
     }
 }
 
