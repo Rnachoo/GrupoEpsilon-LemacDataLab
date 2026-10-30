@@ -4,6 +4,8 @@
 
     <!-- permiso de vibracion-->
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- permiso de notificaciones (Android 13+ lo pide en tiempo de ejecución) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:allowBackup="true"
