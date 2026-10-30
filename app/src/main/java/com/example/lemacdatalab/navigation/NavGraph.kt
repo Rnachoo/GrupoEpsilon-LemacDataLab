@@ -2,6 +2,7 @@ package com.example.lemacdatalab.navigation
 
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.Lifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -16,6 +17,22 @@ import com.example.lemacdatalab.screens.HistorialScreen
 import com.example.lemacdatalab.screens.LoginScreen
 import com.example.lemacdatalab.screens.MenuScreen
 import com.example.lemacdatalab.screens.MoodScreen
+
+/**
+ * Volver "seguro": evita el bug de la pantalla en blanco al spamear el botón volver.
+ *
+ * - previousBackStackEntry != null -> nunca saca la última pantalla de la pila
+ *   (si la pila queda vacía, el NavHost no dibuja nada).
+ * - RESUMED -> ignora toques mientras la pantalla ya se está cerrando (animación de salida).
+ */
+private fun NavHostController.volverSeguro() {
+    val actual = currentBackStackEntry ?: return
+    if (actual.lifecycle.currentState == Lifecycle.State.RESUMED &&
+        previousBackStackEntry != null
+    ) {
+        popBackStack()
+    }
+}
 
 // Definición de las rutas y conexión de pantallas
 @Composable
@@ -50,10 +67,6 @@ fun NavGraph(navController: NavHostController) {
             )
         }
 
-        composable("editor") {
-            Text("Editor (en construcción)") // placeholder hasta que llegue EditorScreen
-        }
-
         composable("menu") {
             MenuScreen(
                 alNavegarNeurodesarrollo = { navController.navigate("neurodesarrollo") },
@@ -73,7 +86,7 @@ fun NavGraph(navController: NavHostController) {
         ) { entrada ->
             val id = entrada.arguments?.getInt("idRegistro") ?: -1
             MoodScreen(
-                onBack = { navController.popBackStack() },
+                onBack = { navController.volverSeguro() },
                 idRegistro = id.takeIf { it != -1 }
             )
         }
@@ -87,14 +100,14 @@ fun NavGraph(navController: NavHostController) {
         ) { entrada ->
             val id = entrada.arguments?.getInt("idRegistro") ?: -1
             DbtScreen(
-                onBack = { navController.popBackStack() },
+                onBack = { navController.volverSeguro() },
                 idRegistro = id.takeIf { it != -1 }
             )
         }
 
         composable("historial") {
             HistorialScreen(
-                onBack = { navController.popBackStack() },
+                onBack = { navController.volverSeguro() },
                 onEditar = { registro ->
                     when (registro.tipoArea) {
                         "animo" -> navController.navigate("animo?idRegistro=${registro.idRegistro}")
@@ -105,6 +118,7 @@ fun NavGraph(navController: NavHostController) {
         }
 
         // Panel de Editor de Contenidos
+        // (se eliminó el placeholder duplicado "Editor (en construcción)")
         composable("editor") {
             EditorScreen(
                 onCerrarSesion = {
