@@ -18,13 +18,6 @@ import com.example.lemacdatalab.screens.LoginScreen
 import com.example.lemacdatalab.screens.MenuScreen
 import com.example.lemacdatalab.screens.MoodScreen
 
-/**
- * Volver "seguro": evita el bug de la pantalla en blanco al spamear el botón volver.
- *
- * - previousBackStackEntry != null -> nunca saca la última pantalla de la pila
- *   (si la pila queda vacía, el NavHost no dibuja nada).
- * - RESUMED -> ignora toques mientras la pantalla ya se está cerrando (animación de salida).
- */
 private fun NavHostController.volverSeguro() {
     val actual = currentBackStackEntry ?: return
     if (actual.lifecycle.currentState == Lifecycle.State.RESUMED &&
