@@ -92,12 +92,12 @@ fun DbtScreen(
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    // Modo edición: carga el registro en el formulario
+    // carga el registro en el formulario
     LaunchedEffect(idRegistro) {
         if (idRegistro != null) viewModel.cargarParaEditar(idRegistro)
     }
 
-    // Éxito al guardar: vibración suave, aviso y vuelta atrás
+    // celebracion al guardar, vibración suave, aviso y vuelta atrás
     LaunchedEffect(uiState.guardado) {
         if (uiState.guardado) {
             vibrarAlGuardar(context, esError = false)
@@ -177,7 +177,7 @@ fun DbtScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // IntensidadCard trabaja con Float; el ViewModel guarda el nivel como Int
+            // IntensidadCard trabaja con Float el ViewModel guarda el nivel como Int
             IntensidadCard(
                 valor = uiState.nivelImpulso.toFloat(),
                 onValorChange = { viewModel.onNivelChange(it.roundToInt()) }
@@ -216,7 +216,7 @@ fun DbtScreen(
                 }
             }
 
-            // Error: la habilidad es obligatoria
+            // la habilidad es obligatoria
             uiState.habilidadError?.let { error ->
                 Text(
                     text = error,
@@ -271,7 +271,7 @@ fun DbtScreen(
                 maxLines = 5
             )
 
-            // Contador, o el mensaje de error (por ejemplo: impulso > 7 exige justificar)
+            // Contador, o el mensaje de error
             Text(
                 text = uiState.notasError ?: "${uiState.notas.length}/${DbtViewModel.MAX_NOTAS}",
                 style = MaterialTheme.typography.labelSmall,
@@ -288,14 +288,11 @@ fun DbtScreen(
             // Siempre habilitado: guardar() valida y muestra los errores
             Button(
                 onClick = {
-                    // 1. Validamos al instante si falta información requerida para forzar la vibración de error.
-                    // Al estar aquí, se ejecuta incondicionalmente en CADA pulsación.
                     val hayError = uiState.habilidad == null || uiState.notasError != null
                     if (hayError) {
                         vibrarAlGuardar(context, esError = true)
                     }
 
-                    // 2. Ejecutar la función de guardado
                     viewModel.guardar()
                 },
                 modifier = Modifier

@@ -54,10 +54,10 @@ import java.util.Locale
 
 private val AmbarCalido = Color(0xFFFBBF24)
 
-// pantalla principal del menu (recibe eventos de navegación como parámetros)
+// pantalla principal del menu
 @Composable
 fun MenuScreen(
-    // Ahora lee dinámicamente el ID del usuario que inició sesión en SesionUsuario
+    //lee dinamicamente el ID del usuario que inicio sesion en SesionUsuario
     idUsuario: String = SesionUsuario.usuarioActual?.identificadorSintetico ?: "AX-7B99",
     alNavegarNeurodesarrollo: () -> Unit = {},
     alNavegarDBT: () -> Unit = {},
@@ -69,7 +69,7 @@ fun MenuScreen(
 ) {
     val contenidos by contenidoViewModel.contenidos.collectAsState()
     val state by menuViewModel.uiState.collectAsState()
-    // la consulta deja primero la lectura marcada; si no hay ninguna, queda la más reciente
+    // la consulta deja primero la lectura marcada; si no hay ninguna, queda la mas reciente
     val lecturaDiaria = contenidos.firstOrNull()
     var lecturaAbierta by remember { mutableStateOf(false) }
     var guiaAbierta by remember { mutableStateOf(false) }
@@ -364,7 +364,7 @@ fun TarjetaModulo(
     }
 }
 
-// botón de ayuda: salta y brilla hasta que el usuario abre la guía por primera vez
+// boton de ayuda: salta y brilla hasta que el usuario abre la guia por primera vez
 @Composable
 private fun BotonAyuda(animado: Boolean, alHacerClic: () -> Unit) {
     var desplazamiento = 0f
@@ -468,7 +468,7 @@ private fun PasoGuia(numero: Int, titulo: String, detalle: String) {
     }
 }
 
-// últimos registros del usuario y un mensaje de ánimo según su racha
+// ultimos registros del usuario y un mensaje de animo segun su racha
 @Composable
 private fun BandejaAlertasDialog(
     eventos: List<RegistroHistorial>,

@@ -57,7 +57,7 @@ fun LoginScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
 
-    // Al autenticar: guarda el rol, limpia el formulario y avanza según el rol
+    // al autenticar guarda el rol, limpia el formulario y avanza segun el rol
     LaunchedEffect(state.ingresado) {
         if (state.ingresado) {
             val rol = state.rol
@@ -120,7 +120,7 @@ fun LoginScreen(
                 onAceptadoChange = viewModel::onDeslindeChange
             )
 
-            // Botón justo bajo el deslinde para que quede al alcance en cualquier pantalla
+            // boton justo abajo para que quede al alcance en cualquier pantalla
             Button(
                 onClick = { viewModel.ingresar() },
                 enabled = state.deslindeAceptado,
@@ -144,7 +144,7 @@ fun LoginScreen(
                 )
             }
 
-            // Acceso rápido (modo demo): solo autocompleta el ID
+            // Acceso rápido (modo demo)
             Text(
                 text = "Acceso rápido (modo demo)",
                 fontSize = 12.sp,
