@@ -10,6 +10,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -35,6 +36,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -43,8 +45,10 @@ import com.example.lemacdatalab.components.ContenidoDiarioCard
 import com.example.lemacdatalab.components.LecturaModalDialog
 import com.example.lemacdatalab.data.SesionUsuario
 import com.example.lemacdatalab.model.RegistroHistorial
+import com.example.lemacdatalab.native.LineasEmergencia
 import com.example.lemacdatalab.native.NotificacionHelper
 import com.example.lemacdatalab.native.compartirLecturaDiaria
+import com.example.lemacdatalab.native.marcarNumeroEmergencia
 import com.example.lemacdatalab.ui.theme.*
 import com.example.lemacdatalab.viewmodel.ContenidoViewModel
 import com.example.lemacdatalab.viewmodel.MenuViewModel
@@ -73,6 +77,7 @@ fun MenuScreen(
     val lecturaDiaria = contenidos.firstOrNull()
     var lecturaAbierta by remember { mutableStateOf(false) }
     var guiaAbierta by remember { mutableStateOf(false) }
+    var ayudaAbierta by remember { mutableStateOf(false) }
     var bandejaAbierta by remember { mutableStateOf(false) }
     var permisoSolicitado by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
@@ -104,10 +109,11 @@ fun MenuScreen(
             racha = state.racha,
             animarAyuda = !state.onboardingVisto,
             hayRegistroHoy = state.hayRegistroHoy,
-            alAbrirAyuda = {
+            alAbrirGuia = {
                 guiaAbierta = true
                 menuViewModel.marcarOnboardingVisto()
             },
+            alAbrirAyuda = { ayudaAbierta = true },
             alAbrirBandeja = { bandejaAbierta = true },
             alVerHistorial = alNavegarHistorial
         )
@@ -166,6 +172,14 @@ fun MenuScreen(
                     alHacerClic = alNavegarAdicciones
                 )
             }
+            item {
+                TarjetaModulo(
+                    titulo = "Ayuda y Emergencias",
+                    subtitulo = "Línea *4141 · Salud Responde · SAMU",
+                    icono = Icons.Default.PhoneInTalk,
+                    alHacerClic = { ayudaAbierta = true }
+                )
+            }
             if (lecturaDiaria != null) {
                 item {
                     ContenidoDiarioCard(
@@ -190,6 +204,10 @@ fun MenuScreen(
         GuiaBienvenidaDialog(onCerrar = { guiaAbierta = false })
     }
 
+    if (ayudaAbierta) {
+        AyudaEmergenciaDialog(onCerrar = { ayudaAbierta = false })
+    }
+
     if (bandejaAbierta) {
         BandejaAlertasDialog(
             eventos = state.ultimosEventos,
@@ -207,8 +225,9 @@ fun EncabezadoMenu(
     racha: Int,
     animarAyuda: Boolean,
     hayRegistroHoy: Boolean,
-    alAbrirAyuda: () -> Unit,
-    alAbrirBandeja: () -> Unit,
+    alAbrirGuia: () -> Unit = {},
+    alAbrirAyuda: () -> Unit = {},
+    alAbrirBandeja: () -> Unit = {},
     alVerHistorial: () -> Unit = {}
 ) {
     Box(
@@ -248,7 +267,9 @@ fun EncabezadoMenu(
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    BotonAyuda(animado = animarAyuda, alHacerClic = alAbrirAyuda)
+                    BotonGuia(animado = animarAyuda, alHacerClic = alAbrirGuia)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    BotonAccesoAyuda(alHacerClic = alAbrirAyuda)
                     Spacer(modifier = Modifier.width(8.dp))
                     BadgedBox(
                         badge = {
@@ -301,13 +322,18 @@ fun EncabezadoMenu(
                         }
                     }
 
-                    Button(
-                        onClick = alVerHistorial,
-                        colors = ButtonDefaults.buttonColors(containerColor = SuperficieBlanca.copy(alpha = 0.3f)),
+                    Surface(
                         shape = RoundedCornerShape(20.dp),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                        color = SuperficieBlanca.copy(alpha = 0.25f),
+                        modifier = Modifier.clickable { alVerHistorial() }
                     ) {
-                        Text(text = "Ver historial", color = SuperficieBlanca, fontSize = 12.sp)
+                        Text(
+                            text = "Ver Historial",
+                            color = SuperficieBlanca,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                        )
                     }
                 }
             }
@@ -315,7 +341,7 @@ fun EncabezadoMenu(
     }
 }
 
-// componente para generar c/u de las 4 opciones de autorregistro
+// unifica las tarjetas del menu
 @Composable
 fun TarjetaModulo(
     titulo: String,
@@ -324,16 +350,16 @@ fun TarjetaModulo(
     alHacerClic: () -> Unit
 ) {
     Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = SuperficieBlanca),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { alHacerClic() }
+            .clickable { alHacerClic() },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = SuperficieBlanca),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
             modifier = Modifier
-                .padding(16.dp)
+                .padding(20.dp)
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
@@ -342,10 +368,10 @@ fun TarjetaModulo(
                 Icon(
                     imageVector = icono,
                     contentDescription = titulo,
-                    tint = TextoSecundario,
+                    tint = VerdePrincipal,
                     modifier = Modifier
                         .size(48.dp)
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(CircleShape)
                         .background(FondoClaro)
                         .padding(12.dp)
                 )
@@ -364,14 +390,14 @@ fun TarjetaModulo(
     }
 }
 
-// boton de ayuda: salta y brilla hasta que el usuario abre la guia por primera vez
+// boton de guia: salta y brilla hasta que el usuario abre la guia por primera vez
 @Composable
-private fun BotonAyuda(animado: Boolean, alHacerClic: () -> Unit) {
+private fun BotonGuia(animado: Boolean, alHacerClic: () -> Unit) {
     var desplazamiento = 0f
     var escalaHalo = 1f
     var opacidadHalo = 0f
     if (animado) {
-        val transicion = rememberInfiniteTransition(label = "botonAyuda")
+        val transicion = rememberInfiniteTransition(label = "botonGuia")
         desplazamiento = transicion.animateFloat(
             initialValue = 0f,
             targetValue = -5f,
@@ -423,6 +449,22 @@ private fun BotonAyuda(animado: Boolean, alHacerClic: () -> Unit) {
     }
 }
 
+// boton permanente de ayuda y emergencia con marcación rápida
+@Composable
+private fun BotonAccesoAyuda(alHacerClic: () -> Unit) {
+    Icon(
+        imageVector = Icons.Default.PhoneInTalk,
+        contentDescription = "Líneas de ayuda y emergencia",
+        tint = SuperficieBlanca,
+        modifier = Modifier
+            .size(40.dp)
+            .clip(CircleShape)
+            .background(SuperficieBlanca.copy(alpha = 0.2f))
+            .clickable { alHacerClic() }
+            .padding(8.dp)
+    )
+}
+
 @Composable
 private fun GuiaBienvenidaDialog(onCerrar: () -> Unit) {
     AlertDialog(
@@ -445,6 +487,140 @@ private fun GuiaBienvenidaDialog(onCerrar: () -> Unit) {
             }
         }
     )
+}
+
+// Dialogo interactivo de ayuda con los numeros de emergencia y marcado nativo
+@Composable
+private fun AyudaEmergenciaDialog(onCerrar: () -> Unit) {
+    val context = LocalContext.current
+    AlertDialog(
+        onDismissRequest = onCerrar,
+        containerColor = SuperficieBlanca,
+        icon = {
+            Icon(
+                imageVector = Icons.Default.PhoneInTalk,
+                contentDescription = null,
+                tint = VerdePrincipal,
+                modifier = Modifier.size(32.dp)
+            )
+        },
+        title = {
+            Text(
+                text = "Líneas de Ayuda y Emergencia",
+                fontWeight = FontWeight.Bold,
+                color = TextoPrincipal,
+                fontSize = 18.sp,
+                textAlign = TextAlign.Center
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = "LemacDataLab es una app de autoayuda no monitoreada. Si necesitas orientación o estás atravesando una crisis, comunícate gratuitamente con estas líneas oficiales:",
+                    fontSize = 13.sp,
+                    color = TextoSecundario,
+                    lineHeight = 18.sp
+                )
+
+                TarjetaLineaEmergencia(
+                    titulo = "Prevención del Suicidio",
+                    numero = LineasEmergencia.PREVENCION_SUICIDIO,
+                    descripcion = "Línea *4141 «No estás solo». Gratuita, confidencial y disponible 24/7.",
+                    alLlamar = { marcarNumeroEmergencia(context, LineasEmergencia.PREVENCION_SUICIDIO) }
+                )
+
+                TarjetaLineaEmergencia(
+                    titulo = "Salud Responde",
+                    numero = LineasEmergencia.SALUD_RESPONDE,
+                    descripcion = "Orientación médica y apoyo psicológico 24 horas del Ministerio de Salud.",
+                    alLlamar = { marcarNumeroEmergencia(context, LineasEmergencia.SALUD_RESPONDE) }
+                )
+
+                TarjetaLineaEmergencia(
+                    titulo = "SAMU Urgencias",
+                    numero = LineasEmergencia.SAMU,
+                    descripcion = "Atención médica de urgencia en situaciones de riesgo vital.",
+                    alLlamar = { marcarNumeroEmergencia(context, LineasEmergencia.SAMU) }
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onCerrar) {
+                Text(text = "Cerrar", fontWeight = FontWeight.Bold, color = VerdePrincipal)
+            }
+        }
+    )
+}
+
+@Composable
+private fun TarjetaLineaEmergencia(
+    titulo: String,
+    numero: String,
+    descripcion: String,
+    alLlamar: () -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = LemacSurfaceWarm),
+        border = BorderStroke(1.dp, LemacBorderSoft),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = titulo,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        color = TextoPrincipal
+                    )
+                    Text(
+                        text = numero,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 15.sp,
+                        color = VerdePrincipal
+                    )
+                }
+
+                Button(
+                    onClick = alLlamar,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = VerdePrincipal,
+                        contentColor = SuperficieBlanca
+                    ),
+                    shape = RoundedCornerShape(10.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Call,
+                        contentDescription = "Marcar $numero",
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(text = "Marcar", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = descripcion,
+                fontSize = 11.sp,
+                color = TextoSecundario,
+                lineHeight = 15.sp
+            )
+        }
+    }
 }
 
 @Composable
