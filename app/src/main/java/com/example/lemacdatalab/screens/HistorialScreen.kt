@@ -63,6 +63,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.lemacdatalab.components.CartaAnimoCard
 import com.example.lemacdatalab.model.RegistroHistorial
 import com.example.lemacdatalab.viewmodel.FiltroTipoRegistro
 import com.example.lemacdatalab.viewmodel.HistorialViewModel
@@ -84,6 +85,7 @@ fun HistorialScreen(
     val registros by viewModel.registros.collectAsState()
     val filtroActual by viewModel.filtroActual.collectAsState()
     val conteos by viewModel.conteos.collectAsState()
+    val cartaAnimo by viewModel.cartaAnimo.collectAsState()
 
     var registroAEliminar by remember { mutableStateOf<RegistroHistorial?>(null) }
 
@@ -232,6 +234,10 @@ fun HistorialScreen(
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
+                        // La carta resume solo el ánimo: se oculta al filtrar DBT o sin registros de ánimo
+                        if (filtroActual != FiltroTipoRegistro.DBT && (conteos[FiltroTipoRegistro.MOOD] ?: 0) > 0) {
+                            item(key = "carta_animo") { CartaAnimoCard(puntos = cartaAnimo) }
+                        }
                         items(lista, key = { it.idRegistro }) { registro ->
                             TarjetaRegistro(
                                 registro = registro,

@@ -8,7 +8,9 @@ import com.example.lemacdatalab.data.repository.RegistroRepository
 import com.example.lemacdatalab.data.repository.RoomRegistroRepository
 import com.example.lemacdatalab.data.SesionUsuario
 import com.example.lemacdatalab.data.repository.UsuarioRepository
+import com.example.lemacdatalab.model.PuntoCarta
 import com.example.lemacdatalab.model.RegistroHistorial
+import com.example.lemacdatalab.model.calcularCartaAnimo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -33,7 +35,7 @@ class HistorialViewModel(application: Application) : AndroidViewModel(applicatio
     // Flujo original desde Room
     private val _registrosDb = repository.observarHistorial(idUsuario)
 
-    // 2. Estado reactivo para el filtro actual
+    // Estado reactivo para el filtro actual
     private val _filtroActual = MutableStateFlow(FiltroTipoRegistro.TODOS)
     val filtroActual: StateFlow<FiltroTipoRegistro> = _filtroActual.asStateFlow()
 
@@ -57,6 +59,10 @@ class HistorialViewModel(application: Application) : AndroidViewModel(applicatio
             FiltroTipoRegistro.DBT to lista.count { it.tipoArea == "dbt" }
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+
+    // Carta del ánimo: promedio diario de los últimos 30 días
+    val cartaAnimo: StateFlow<List<PuntoCarta>> = _registrosDb.map { calcularCartaAnimo(it) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     // Función para cambiar el filtro
     fun setFiltro(filtro: FiltroTipoRegistro) {
