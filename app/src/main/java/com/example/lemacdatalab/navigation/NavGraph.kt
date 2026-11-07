@@ -1,6 +1,8 @@
 package com.example.lemacdatalab.navigation
 
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Face
+import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.Lifecycle
 import androidx.navigation.NavHostController
@@ -17,6 +19,7 @@ import com.example.lemacdatalab.screens.HistorialScreen
 import com.example.lemacdatalab.screens.LoginScreen
 import com.example.lemacdatalab.screens.MenuScreen
 import com.example.lemacdatalab.screens.MoodScreen
+import com.example.lemacdatalab.screens.ProximamenteScreen
 
 private fun NavHostController.volverSeguro() {
     val actual = currentBackStackEntry ?: return
@@ -111,7 +114,6 @@ fun NavGraph(navController: NavHostController) {
         }
 
         // Panel de Editor de Contenidos
-        // (se eliminó el placeholder duplicado "Editor (en construcción)")
         composable("editor") {
             EditorScreen(
                 onCerrarSesion = {
@@ -122,13 +124,23 @@ fun NavGraph(navController: NavHostController) {
             )
         }
 
-        // Rutas temporales restantes
+        // Módulos pendientes: Pantalla reutilizable «Próximamente» con botón volver
         composable("neurodesarrollo") {
-            Text("Pantalla de Neurodesarrollo (En construcción)")
+            ProximamenteScreen(
+                titulo = "Neurodesarrollo",
+                subtitulo = "Rutinas y autorregulación",
+                icono = Icons.Default.Face,
+                onBack = { navController.volverSeguro() }
+            )
         }
 
         composable("adicciones") {
-            Text("Pantalla de Adicciones (En construcción)")
+            ProximamenteScreen(
+                titulo = "Adicciones",
+                subtitulo = "Impulsos y metas",
+                icono = Icons.Default.LocalFireDepartment,
+                onBack = { navController.volverSeguro() }
+            )
         }
     }
 }
