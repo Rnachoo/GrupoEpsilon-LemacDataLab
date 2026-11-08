@@ -21,4 +21,16 @@ fun compartirLecturaDiaria(context: Context, contenido: ContenidoEducativo) {
     }
     val shareChooser = Intent.createChooser(sendIntent, "Guardar o compartir lectura diaria")
     context.startActivity(shareChooser)
+
 }
+
+// abre la hoja nativa de Android para enviar el CSV de registros
+fun compartirRegistrosCsv(context: Context, csv: String) {
+    val sendIntent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_SUBJECT, "Mis registros - Lemac DataLab")
+        putExtra(Intent.EXTRA_TEXT, csv)
+    }
+    context.startActivity(Intent.createChooser(sendIntent, "Exportar mis registros"))
+}
+

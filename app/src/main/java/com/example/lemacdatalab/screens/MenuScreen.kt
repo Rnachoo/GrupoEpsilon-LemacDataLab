@@ -68,6 +68,7 @@ fun MenuScreen(
     alNavegarAnimo: () -> Unit = {},
     alNavegarAdicciones: () -> Unit = {},
     alNavegarHistorial: () -> Unit = {},
+    alNavegarMisDatos: () -> Unit = {},
     contenidoViewModel: ContenidoViewModel = viewModel(factory = ContenidoViewModel.Factory),
     menuViewModel: MenuViewModel = viewModel()
 ) {
@@ -178,6 +179,14 @@ fun MenuScreen(
                     subtitulo = "Línea *4141 · Salud Responde · SAMU",
                     icono = Icons.Default.PhoneInTalk,
                     alHacerClic = { ayudaAbierta = true }
+                )
+            }
+            item {
+                TarjetaModulo(
+                    titulo = "Mis datos",
+                    subtitulo = "Exportar o eliminar mis registros",
+                    icono = Icons.Default.Lock,
+                    alHacerClic = alNavegarMisDatos
                 )
             }
             if (lecturaDiaria != null) {

@@ -111,4 +111,7 @@ abstract class RegistroDetalleDao {
 
     @Query("DELETE FROM registro_maestro WHERE idRegistro = :idRegistro AND idUsuario = :idUsuario")
     abstract suspend fun eliminarRegistro(idUsuario: Int, idRegistro: Int)
+
+    @Query("DELETE FROM registro_maestro WHERE idUsuario = :idUsuario")
+    abstract suspend fun eliminarTodos(idUsuario: Int)
 }
