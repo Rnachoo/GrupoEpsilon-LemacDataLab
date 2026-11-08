@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.material3.MaterialTheme
@@ -54,6 +55,8 @@ class MainActivity : ComponentActivity() {
                                 .fillMaxWidth()
                                 .weight(1f)
                                 .consumeWindowInsets(WindowInsets.statusBars)
+                                // el contenido queda siempre por encima de los botones del teléfono
+                                .navigationBarsPadding()
                         ) {
                             val navController = rememberNavController()
                             NavGraph(navController = navController)

@@ -15,6 +15,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -25,6 +28,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -35,6 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -55,6 +60,7 @@ import com.example.lemacdatalab.viewmodel.MenuViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.launch
 
 private val AmbarCalido = Color(0xFFFBBF24)
 
@@ -82,6 +88,9 @@ fun MenuScreen(
     var bandejaAbierta by remember { mutableStateOf(false) }
     var permisoSolicitado by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
+    // dos secciones deslizables: Registrar y Mi espacio
+    val pagerState = rememberPagerState(pageCount = { 2 })
+    val scope = rememberCoroutineScope()
 
     // si el permiso se rechaza, los avisos igual quedan en la bandeja de la campana
     val permisoNotificaciones = rememberLauncherForActivityResult(
@@ -119,83 +128,103 @@ fun MenuScreen(
             alVerHistorial = alNavegarHistorial
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-            Text(
-                text = "Módulos de Autorregistro",
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextoPrincipal
-            )
-            Text(
-                text = "Selecciona el área que deseas registrar hoy.",
-                fontSize = 14.sp,
-                color = TextoSecundario,
-                modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
-            )
-        }
+        PestanasMenu(
+            titulos = listOf("Registrar", "Mi espacio"),
+            seleccionada = pagerState.currentPage,
+            alSeleccionar = { scope.launch { pagerState.animateScrollToPage(it) } }
+        )
 
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            item {
-                TarjetaModulo(
-                    titulo = "Neurodesarrollo",
-                    subtitulo = "Rutinas y autorregulación",
-                    icono = Icons.Default.Face,
-                    alHacerClic = alNavegarNeurodesarrollo
-                )
-            }
-            item {
-                TarjetaModulo(
-                    titulo = "Diario DBT",
-                    subtitulo = "Habilidades y emociones",
-                    icono = Icons.Default.MenuBook,
-                    alHacerClic = alNavegarDBT
-                )
-            }
-            item {
-                TarjetaModulo(
-                    titulo = "Estado de Ánimo",
-                    subtitulo = "Escala y contexto",
-                    icono = Icons.Default.CloudQueue,
-                    alHacerClic = alNavegarAnimo
-                )
-            }
-            item {
-                TarjetaModulo(
-                    titulo = "Adicciones",
-                    subtitulo = "Impulsos y metas",
-                    icono = Icons.Default.LocalFireDepartment,
-                    alHacerClic = alNavegarAdicciones
-                )
-            }
-            item {
-                TarjetaModulo(
-                    titulo = "Ayuda y Emergencias",
-                    subtitulo = "Línea *4141 · Salud Responde · SAMU",
-                    icono = Icons.Default.PhoneInTalk,
-                    alHacerClic = { ayudaAbierta = true }
-                )
-            }
-            item {
-                TarjetaModulo(
-                    titulo = "Mis datos",
-                    subtitulo = "Exportar o eliminar mis registros",
-                    icono = Icons.Default.Lock,
-                    alHacerClic = alNavegarMisDatos
-                )
-            }
-            if (lecturaDiaria != null) {
-                item {
-                    ContenidoDiarioCard(
-                        contenido = lecturaDiaria,
-                        onClick = { lecturaAbierta = true },
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+        ) { pagina ->
+            if (pagina == 0) {
+                // Sección 1: los cuatro módulos de registro
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    item {
+                        EncabezadoSeccion(
+                            titulo = "Módulos de Autorregistro",
+                            subtitulo = "Selecciona el área que deseas registrar hoy."
+                        )
+                    }
+                    item {
+                        TarjetaModulo(
+                            titulo = "Neurodesarrollo",
+                            subtitulo = "Rutinas y autorregulación",
+                            icono = Icons.Default.Face,
+                            alHacerClic = alNavegarNeurodesarrollo
+                        )
+                    }
+                    item {
+                        TarjetaModulo(
+                            titulo = "Diario DBT",
+                            subtitulo = "Habilidades y emociones",
+                            icono = Icons.Default.MenuBook,
+                            alHacerClic = alNavegarDBT
+                        )
+                    }
+                    item {
+                        TarjetaModulo(
+                            titulo = "Estado de Ánimo",
+                            subtitulo = "Escala y contexto",
+                            icono = Icons.Default.CloudQueue,
+                            alHacerClic = alNavegarAnimo
+                        )
+                    }
+                    item {
+                        TarjetaModulo(
+                            titulo = "Adicciones",
+                            subtitulo = "Impulsos y metas",
+                            icono = Icons.Default.LocalFireDepartment,
+                            alHacerClic = alNavegarAdicciones
+                        )
+                    }
+                }
+            } else {
+                // Sección 2: lectura del día, ayuda y control de los datos
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    item {
+                        EncabezadoSeccion(
+                            titulo = "Mi espacio",
+                            subtitulo = "Tu lectura del día, la ayuda y el control de tus datos."
+                        )
+                    }
+                    if (lecturaDiaria != null) {
+                        item {
+                            ContenidoDiarioCard(
+                                contenido = lecturaDiaria,
+                                onClick = { lecturaAbierta = true }
+                            )
+                        }
+                    }
+                    item {
+                        TarjetaModulo(
+                            titulo = "Ayuda y Emergencias",
+                            subtitulo = "Línea *4141 · Salud Responde · SAMU",
+                            icono = Icons.Default.PhoneInTalk,
+                            alHacerClic = { ayudaAbierta = true }
+                        )
+                    }
+                    item {
+                        TarjetaModulo(
+                            titulo = "Mis datos",
+                            subtitulo = "Exportar o eliminar mis registros",
+                            icono = Icons.Default.Lock,
+                            alHacerClic = alNavegarMisDatos
+                        )
+                    }
                 }
             }
         }
@@ -350,6 +379,67 @@ fun EncabezadoMenu(
     }
 }
 
+// título y bajada de cada sección del menú
+@Composable
+private fun EncabezadoSeccion(titulo: String, subtitulo: String) {
+    Column {
+        Text(
+            text = titulo,
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Bold,
+            color = TextoPrincipal
+        )
+        Text(
+            text = subtitulo,
+            fontSize = 14.sp,
+            color = TextoSecundario,
+            modifier = Modifier.padding(top = 4.dp)
+        )
+    }
+}
+
+// pestañas del menú: se tocan o se cambian deslizando, como en la Play Store
+@Composable
+private fun PestanasMenu(
+    titulos: List<String>,
+    seleccionada: Int,
+    alSeleccionar: (Int) -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp)) {
+            titulos.forEachIndexed { indice, titulo ->
+                val activa = indice == seleccionada
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .selectable(
+                            selected = activa,
+                            onClick = { alSeleccionar(indice) },
+                            role = Role.Tab
+                        ),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = titulo,
+                        fontSize = 16.sp,
+                        fontWeight = if (activa) FontWeight.Bold else FontWeight.Medium,
+                        color = if (activa) VerdePrincipal else TextoSecundario,
+                        modifier = Modifier.padding(vertical = 12.dp)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(3.dp)
+                            .clip(RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp))
+                            .background(if (activa) VerdePrincipal else Color.Transparent)
+                    )
+                }
+            }
+        }
+        HorizontalDivider(color = TextoSecundario.copy(alpha = 0.15f))
+    }
+}
+
 // unifica las tarjetas del menu
 @Composable
 fun TarjetaModulo(
@@ -488,6 +578,7 @@ private fun GuiaBienvenidaDialog(onCerrar: () -> Unit) {
                 PasoGuia(numero = 1, titulo = "Elige un módulo", detalle = "Registra tu ánimo o habilidad.")
                 PasoGuia(numero = 2, titulo = "Evalúa sin juicios", detalle = "Usa la escala del 1 al 10.")
                 PasoGuia(numero = 3, titulo = "Mira tu avance", detalle = "Filtra tu historial cuando quieras.")
+                PasoGuia(numero = 4, titulo = "Desliza el menú", detalle = "En «Mi espacio» están la lectura del día, la ayuda y tus datos.")
             }
         },
         confirmButton = {
