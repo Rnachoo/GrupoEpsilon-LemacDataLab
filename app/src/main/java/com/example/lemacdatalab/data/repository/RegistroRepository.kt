@@ -24,6 +24,8 @@ interface RegistroRepository {
 
     // Delete
     suspend fun eliminar(idUsuario: Int, idRegistro: Int)
+
+    suspend fun eliminarTodos(idUsuario: Int)
 }
 
 class RoomRegistroRepository(
@@ -54,6 +56,10 @@ class RoomRegistroRepository(
 
     override suspend fun eliminar(idUsuario: Int, idRegistro: Int) {
         dao.eliminarRegistro(idUsuario, idRegistro)
+    }
+
+    override suspend fun eliminarTodos(idUsuario: Int) {
+        dao.eliminarTodos(idUsuario)
     }
 
     private fun nuevoRegistro(idUsuario: Int, tipoArea: String, notas: String?) = RegistroMaestro(

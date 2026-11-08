@@ -5,6 +5,7 @@ import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.Lifecycle
+import com.example.lemacdatalab.screens.MisDatosScreen
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -69,7 +70,8 @@ fun NavGraph(navController: NavHostController) {
                 alNavegarDBT = { navController.navigate("dbt") },
                 alNavegarAnimo = { navController.navigate("animo") },
                 alNavegarAdicciones = { navController.navigate("adicciones") },
-                alNavegarHistorial = { navController.navigate("historial") }
+                alNavegarHistorial = { navController.navigate("historial") },
+                alNavegarMisDatos = { navController.navigate("misdatos") }
             )
         }
 
@@ -110,6 +112,12 @@ fun NavGraph(navController: NavHostController) {
                         "dbt" -> navController.navigate("dbt?idRegistro=${registro.idRegistro}")
                     }
                 }
+            )
+        }
+
+        composable("misdatos") {
+            MisDatosScreen(
+                onBack = { navController.volverSeguro() }
             )
         }
 
