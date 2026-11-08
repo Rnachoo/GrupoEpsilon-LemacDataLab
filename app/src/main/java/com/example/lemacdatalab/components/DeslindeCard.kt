@@ -1,9 +1,11 @@
 package com.example.lemacdatalab.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.lemacdatalab.native.LineasEmergencia
 import com.example.lemacdatalab.ui.theme.SuperficieBlanca
 import com.example.lemacdatalab.ui.theme.TextoPrincipal
 import com.example.lemacdatalab.ui.theme.TextoSecundario
@@ -57,23 +60,46 @@ fun DeslindeCard(
                 modifier = Modifier.padding(4.dp)
             )
             Spacer(Modifier.width(12.dp))
-            Text(
-                text = buildAnnotatedString {
-                    append("Confirmo que he leído el ")
-                    withStyle(
-                        SpanStyle(
-                            fontWeight = FontWeight.Bold,
-                            color = TextoPrincipal
-                        )
-                    ) {
-                        append("deslinde clínico")
-                    }
-                    append(". Comprendo que este registro no sustituye el tratamiento médico ni la atención en crisis.")
-                },
-                fontSize = 13.sp,
-                lineHeight = 19.sp,
-                color = TextoSecundario
-            )
+            Column {
+                Text(
+                    text = buildAnnotatedString {
+                        append("Confirmo que he leído el ")
+                        withStyle(
+                            SpanStyle(
+                                fontWeight = FontWeight.Bold,
+                                color = TextoPrincipal
+                            )
+                        ) {
+                            append("deslinde clínico")
+                        }
+                        append(". Comprendo que este registro no sustituye el tratamiento médico ni la atención en crisis.")
+                    },
+                    fontSize = 13.sp,
+                    lineHeight = 19.sp,
+                    color = TextoSecundario
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = buildAnnotatedString {
+                        append("Es una app de autoayuda no monitoreada: no notifica a nadie. En una crisis llama a ")
+                        withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = TextoPrincipal)) {
+                            append(LineasEmergencia.PREVENCION_SUICIDIO)
+                        }
+                        append(", Salud Responde ")
+                        withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = TextoPrincipal)) {
+                            append(LineasEmergencia.SALUD_RESPONDE)
+                        }
+                        append(" o SAMU ")
+                        withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = TextoPrincipal)) {
+                            append(LineasEmergencia.SAMU)
+                        }
+                        append(".")
+                    },
+                    fontSize = 13.sp,
+                    lineHeight = 19.sp,
+                    color = TextoSecundario
+                )
+            }
         }
     }
 }
