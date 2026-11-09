@@ -48,9 +48,10 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.lemacdatalab.components.ContenidoDiarioCard
 import com.example.lemacdatalab.components.LecturaModalDialog
+import com.example.lemacdatalab.components.TarjetaLineaEmergencia
 import com.example.lemacdatalab.data.SesionUsuario
 import com.example.lemacdatalab.model.RegistroHistorial
-import com.example.lemacdatalab.native.LineasEmergencia
+import com.example.lemacdatalab.native.LINEAS_AYUDA
 import com.example.lemacdatalab.native.NotificacionHelper
 import com.example.lemacdatalab.native.compartirLecturaDiaria
 import com.example.lemacdatalab.native.marcarNumeroEmergencia
@@ -625,26 +626,14 @@ private fun AyudaEmergenciaDialog(onCerrar: () -> Unit) {
                     lineHeight = 18.sp
                 )
 
-                TarjetaLineaEmergencia(
-                    titulo = "Prevención del Suicidio",
-                    numero = LineasEmergencia.PREVENCION_SUICIDIO,
-                    descripcion = "Línea *4141 «No estás solo». Gratuita, confidencial y disponible 24/7.",
-                    alLlamar = { marcarNumeroEmergencia(context, LineasEmergencia.PREVENCION_SUICIDIO) }
-                )
-
-                TarjetaLineaEmergencia(
-                    titulo = "Salud Responde",
-                    numero = LineasEmergencia.SALUD_RESPONDE,
-                    descripcion = "Orientación médica y apoyo psicológico 24 horas del Ministerio de Salud.",
-                    alLlamar = { marcarNumeroEmergencia(context, LineasEmergencia.SALUD_RESPONDE) }
-                )
-
-                TarjetaLineaEmergencia(
-                    titulo = "SAMU Urgencias",
-                    numero = LineasEmergencia.SAMU,
-                    descripcion = "Atención médica de urgencia en situaciones de riesgo vital.",
-                    alLlamar = { marcarNumeroEmergencia(context, LineasEmergencia.SAMU) }
-                )
+                LINEAS_AYUDA.forEach { linea ->
+                    TarjetaLineaEmergencia(
+                        titulo = linea.titulo,
+                        numero = linea.numero,
+                        descripcion = linea.descripcion,
+                        alLlamar = { marcarNumeroEmergencia(context, linea.numero) }
+                    )
+                }
             }
         },
         confirmButton = {
@@ -653,74 +642,6 @@ private fun AyudaEmergenciaDialog(onCerrar: () -> Unit) {
             }
         }
     )
-}
-
-@Composable
-private fun TarjetaLineaEmergencia(
-    titulo: String,
-    numero: String,
-    descripcion: String,
-    alLlamar: () -> Unit
-) {
-    Card(
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = LemacSurfaceWarm),
-        border = BorderStroke(1.dp, LemacBorderSoft),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = titulo,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp,
-                        color = TextoPrincipal
-                    )
-                    Text(
-                        text = numero,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 15.sp,
-                        color = VerdePrincipal
-                    )
-                }
-
-                Button(
-                    onClick = alLlamar,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = VerdePrincipal,
-                        contentColor = SuperficieBlanca
-                    ),
-                    shape = RoundedCornerShape(10.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Call,
-                        contentDescription = "Marcar $numero",
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(text = "Marcar", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = descripcion,
-                fontSize = 11.sp,
-                color = TextoSecundario,
-                lineHeight = 15.sp
-            )
-        }
-    }
 }
 
 @Composable

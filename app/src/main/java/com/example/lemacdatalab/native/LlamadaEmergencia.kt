@@ -13,6 +13,31 @@ object LineasEmergencia {
     const val SAMU = "131"
 }
 
+data class LineaAyuda(val titulo: String, val numero: String, val descripcion: String)
+
+val LINEAS_AYUDA = listOf(
+    LineaAyuda(
+        titulo = "Prevención del Suicidio",
+        numero = LineasEmergencia.PREVENCION_SUICIDIO,
+        descripcion = "Línea *4141 «No estás solo». Gratuita, confidencial y disponible 24/7."
+    ),
+    LineaAyuda(
+        titulo = "Salud Responde",
+        numero = LineasEmergencia.SALUD_RESPONDE,
+        descripcion = "Orientación médica y apoyo psicológico 24 horas del Ministerio de Salud."
+    ),
+    LineaAyuda(
+        titulo = "SAMU Urgencias",
+        numero = LineasEmergencia.SAMU,
+        descripcion = "Atención médica de urgencia en situaciones de riesgo vital."
+    )
+)
+
+object ContactoApoyoEjemplo {
+    const val NOMBRE = "Camila (contacto de ejemplo)"
+    const val TELEFONO = "+56 9 1234 5678"
+}
+
 /**
  * Segundo recurso nativo: Marcador telefónico mediante Intent.ACTION_DIAL.
  * Abre la app de teléfono del sistema con el número premarcado sin requerir permisos de llamada directa.
