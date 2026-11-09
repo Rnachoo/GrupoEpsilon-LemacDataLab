@@ -53,7 +53,7 @@ abstract class RegistroDetalleDao {
         FROM registro_maestro r
         LEFT JOIN mood_detalle m ON m.idRegistro = r.idRegistro
         LEFT JOIN dbt_detalle d ON d.idRegistro = r.idRegistro
-        WHERE r.idUsuario = :idUsuario
+        WHERE r.idUsuario = :idUsuario AND r.estadoRegistro != 'eliminado'
         ORDER BY r.fechaHoraCreacion DESC, r.idRegistro DESC
         """
     )
@@ -73,7 +73,7 @@ abstract class RegistroDetalleDao {
         FROM registro_maestro r
         LEFT JOIN mood_detalle m ON m.idRegistro = r.idRegistro
         LEFT JOIN dbt_detalle d ON d.idRegistro = r.idRegistro
-        WHERE r.idRegistro = :idRegistro AND r.idUsuario = :idUsuario
+        WHERE r.idRegistro = :idRegistro AND r.idUsuario = :idUsuario AND r.estadoRegistro != 'eliminado'
         """
     )
     abstract suspend fun obtenerRegistro(idUsuario: Int, idRegistro: Int): RegistroHistorial?
@@ -109,9 +109,9 @@ abstract class RegistroDetalleDao {
 
     // ---------- DELETE ----------
 
-    @Query("DELETE FROM registro_maestro WHERE idRegistro = :idRegistro AND idUsuario = :idUsuario")
+    @Query("UPDATE registro_maestro SET estadoRegistro = 'eliminado' WHERE idRegistro = :idRegistro AND idUsuario = :idUsuario")
     abstract suspend fun eliminarRegistro(idUsuario: Int, idRegistro: Int)
 
-    @Query("DELETE FROM registro_maestro WHERE idUsuario = :idUsuario")
+    @Query("UPDATE registro_maestro SET estadoRegistro = 'eliminado' WHERE idUsuario = :idUsuario")
     abstract suspend fun eliminarTodos(idUsuario: Int)
 }
