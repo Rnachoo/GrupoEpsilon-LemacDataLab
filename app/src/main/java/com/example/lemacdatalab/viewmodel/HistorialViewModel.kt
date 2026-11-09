@@ -8,6 +8,7 @@ import com.example.lemacdatalab.data.repository.RegistroRepository
 import com.example.lemacdatalab.data.repository.RoomRegistroRepository
 import com.example.lemacdatalab.data.SesionUsuario
 import com.example.lemacdatalab.data.repository.UsuarioRepository
+import com.example.lemacdatalab.model.DIAS_CARTA_ANIMO
 import com.example.lemacdatalab.model.PuntoCarta
 import com.example.lemacdatalab.model.RegistroHistorial
 import com.example.lemacdatalab.model.calcularCartaAnimo
@@ -60,13 +61,26 @@ class HistorialViewModel(application: Application) : AndroidViewModel(applicatio
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
-    // Carta del ánimo: promedio diario de los últimos 30 días
-    val cartaAnimo: StateFlow<List<PuntoCarta>> = _registrosDb.map { calcularCartaAnimo(it) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    // Período seleccionado para la carta del ánimo (7 o 30 días)
+    private val _diasCarta = MutableStateFlow(DIAS_CARTA_ANIMO)
+    val diasCarta: StateFlow<Int> = _diasCarta.asStateFlow()
+
+    // Carta del ánimo: promedio diario según el período seleccionado (7 o 30 días)
+    val cartaAnimo: StateFlow<List<PuntoCarta>> = combine(
+        _registrosDb,
+        _diasCarta
+    ) { lista, dias ->
+        calcularCartaAnimo(lista, dias = dias)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     // Función para cambiar el filtro
     fun setFiltro(filtro: FiltroTipoRegistro) {
         _filtroActual.value = filtro
+    }
+
+    // Función para cambiar el período de la carta del ánimo
+    fun setDiasCarta(dias: Int) {
+        _diasCarta.value = dias
     }
 
     fun eliminar(idRegistro: Int) {

@@ -86,6 +86,7 @@ fun HistorialScreen(
     val filtroActual by viewModel.filtroActual.collectAsState()
     val conteos by viewModel.conteos.collectAsState()
     val cartaAnimo by viewModel.cartaAnimo.collectAsState()
+    val diasCarta by viewModel.diasCarta.collectAsState()
 
     var registroAEliminar by remember { mutableStateOf<RegistroHistorial?>(null) }
 
@@ -236,7 +237,13 @@ fun HistorialScreen(
                     ) {
                         // La carta resume solo el ánimo: se oculta al filtrar DBT o sin registros de ánimo
                         if (filtroActual != FiltroTipoRegistro.DBT && (conteos[FiltroTipoRegistro.MOOD] ?: 0) > 0) {
-                            item(key = "carta_animo") { CartaAnimoCard(puntos = cartaAnimo) }
+                            item(key = "carta_animo") {
+                                CartaAnimoCard(
+                                    puntos = cartaAnimo,
+                                    dias = diasCarta,
+                                    onCambiarDias = { viewModel.setDiasCarta(it) }
+                                )
+                            }
                         }
                         items(lista, key = { it.idRegistro }) { registro ->
                             TarjetaRegistro(
@@ -305,12 +312,30 @@ private fun TarjetaRegistro(
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
-                            Text(
-                                text = tituloArea(registro.tipoArea),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = tituloArea(registro.tipoArea),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                if (registro.estadoRegistro == "editado") {
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Surface(
+                                        shape = RoundedCornerShape(4.dp),
+                                        color = Color(0xFFFDF6EC),
+                                        border = BorderStroke(1.dp, Color(0xFFE0C49F))
+                                    ) {
+                                        Text(
+                                            text = "Editado",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = Color(0xFFD9822B),
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                }
+                            }
                             Text(
                                 text = formatearFecha(registro.fechaHoraCreacion),
                                 style = MaterialTheme.typography.bodySmall,

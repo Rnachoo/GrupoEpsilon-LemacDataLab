@@ -22,7 +22,7 @@ interface RegistroRepository {
     suspend fun actualizarMood(idRegistro: Int, nivel: Int, contexto: String, notas: String?)
     suspend fun actualizarDbt(idRegistro: Int, habilidad: String, nivelImpulso: Int, notas: String?)
 
-    // Delete
+    // Delete (borrado lógico: el registro pasa a estado 'eliminado' sin borrado físico)
     suspend fun eliminar(idUsuario: Int, idRegistro: Int)
 
     suspend fun eliminarTodos(idUsuario: Int)

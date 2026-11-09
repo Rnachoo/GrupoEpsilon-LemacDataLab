@@ -4,7 +4,9 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 
+const val DIAS_CARTA_CORTO = 7
 const val DIAS_CARTA_ANIMO = 30
+val PERIODOS_CARTA_ANIMO = listOf(DIAS_CARTA_CORTO, DIAS_CARTA_ANIMO)
 
 data class PuntoCarta(
     val dia: Int,
