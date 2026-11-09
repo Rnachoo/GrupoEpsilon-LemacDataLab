@@ -86,6 +86,7 @@ fun HistorialScreen(
     val filtroActual by viewModel.filtroActual.collectAsState()
     val conteos by viewModel.conteos.collectAsState()
     val cartaAnimo by viewModel.cartaAnimo.collectAsState()
+    val diasCarta by viewModel.diasCarta.collectAsState()
 
     var registroAEliminar by remember { mutableStateOf<RegistroHistorial?>(null) }
 
@@ -236,7 +237,13 @@ fun HistorialScreen(
                     ) {
                         // La carta resume solo el ánimo: se oculta al filtrar DBT o sin registros de ánimo
                         if (filtroActual != FiltroTipoRegistro.DBT && (conteos[FiltroTipoRegistro.MOOD] ?: 0) > 0) {
-                            item(key = "carta_animo") { CartaAnimoCard(puntos = cartaAnimo) }
+                            item(key = "carta_animo") {
+                                CartaAnimoCard(
+                                    puntos = cartaAnimo,
+                                    dias = diasCarta,
+                                    onCambiarDias = { viewModel.setDiasCarta(it) }
+                                )
+                            }
                         }
                         items(lista, key = { it.idRegistro }) { registro ->
                             TarjetaRegistro(

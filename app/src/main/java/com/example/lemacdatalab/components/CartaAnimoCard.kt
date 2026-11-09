@@ -8,9 +8,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,6 +30,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.lemacdatalab.model.DIAS_CARTA_ANIMO
+import com.example.lemacdatalab.model.PERIODOS_CARTA_ANIMO
 import com.example.lemacdatalab.model.PuntoCarta
 import com.example.lemacdatalab.ui.theme.LemacBorderSoft
 import com.example.lemacdatalab.ui.theme.LemacGreenDark
@@ -52,7 +56,8 @@ private fun colorPunto(promedio: Float): Color = when {
 fun CartaAnimoCard(
     puntos: List<PuntoCarta>,
     modifier: Modifier = Modifier,
-    dias: Int = DIAS_CARTA_ANIMO
+    dias: Int = DIAS_CARTA_ANIMO,
+    onCambiarDias: (Int) -> Unit = {}
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -76,6 +81,23 @@ fun CartaAnimoCard(
                 style = MaterialTheme.typography.bodySmall,
                 color = TextoSecundario
             )
+
+            // Selector de período: 7 y 30 días
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                PERIODOS_CARTA_ANIMO.forEach { opcionDias ->
+                    val seleccionado = dias == opcionDias
+                    FilterChip(
+                        selected = seleccionado,
+                        onClick = { onCambiarDias(opcionDias) },
+                        label = { Text("$opcionDias días") },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = LemacGreenDark,
+                            selectedLabelColor = Color.White
+                        ),
+                        shape = CircleShape
+                    )
+                }
+            }
 
             if (puntos.size < 2) {
                 Text(
