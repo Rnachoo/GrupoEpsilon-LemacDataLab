@@ -8,5 +8,6 @@ data class RegistroHistorial(
     val nivelIntensidad: Int?,
     val contexto: String?,
     val habilidad: String?,
-    val nivelImpulso: Int?
+    val nivelImpulso: Int?,
+    val estadoRegistro: String = "confirmado"
 )

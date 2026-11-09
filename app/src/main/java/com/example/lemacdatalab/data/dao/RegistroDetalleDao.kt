@@ -46,6 +46,7 @@ abstract class RegistroDetalleDao {
                r.tipoArea AS tipoArea,
                r.fechaHoraCreacion AS fechaHoraCreacion,
                r.notasOpcionales AS notasOpcionales,
+               r.estadoRegistro AS estadoRegistro,
                m.nivelIntensidad AS nivelIntensidad,
                m.contexto AS contexto,
                d.habilidad AS habilidad,
@@ -66,6 +67,7 @@ abstract class RegistroDetalleDao {
                r.tipoArea AS tipoArea,
                r.fechaHoraCreacion AS fechaHoraCreacion,
                r.notasOpcionales AS notasOpcionales,
+               r.estadoRegistro AS estadoRegistro,
                m.nivelIntensidad AS nivelIntensidad,
                m.contexto AS contexto,
                d.habilidad AS habilidad,
@@ -80,7 +82,7 @@ abstract class RegistroDetalleDao {
 
     // ---------- UPDATE ----------
 
-    @Query("UPDATE registro_maestro SET notasOpcionales = :notas WHERE idRegistro = :idRegistro")
+    @Query("UPDATE registro_maestro SET estadoRegistro = 'editado', notasOpcionales = :notas WHERE idRegistro = :idRegistro")
     abstract suspend fun actualizarNotas(idRegistro: Int, notas: String?)
 
     @Query(
