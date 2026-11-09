@@ -23,6 +23,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Balance
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Handshake
 import androidx.compose.material.icons.outlined.RemoveCircleOutline
 import androidx.compose.material.icons.outlined.SelfImprovement
@@ -63,9 +64,11 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.lemacdatalab.components.AlertaValorCriticoDialog
 import com.example.lemacdatalab.components.ContextoChip
 import com.example.lemacdatalab.components.IntensidadCard
 import com.example.lemacdatalab.model.HabilidadDbt
+import com.example.lemacdatalab.model.MAX_OTRO
 import com.example.lemacdatalab.native.vibrarAlGuardar
 import com.example.lemacdatalab.ui.theme.LemacBorderSoft
 import com.example.lemacdatalab.ui.theme.LemacGreenDark
@@ -101,12 +104,23 @@ fun DbtScreen(
     LaunchedEffect(uiState.guardado) {
         if (uiState.guardado) {
             vibrarAlGuardar(context, esError = false)
-            scope.launch {
-                snackbarHostState.showSnackbar("Registro DBT guardado correctamente")
+            if (!uiState.alertaCritica) {
+                scope.launch {
+                    snackbarHostState.showSnackbar("Registro DBT guardado correctamente")
+                }
+                viewModel.onGuardadoConsumido()
+                onBack()
             }
-            viewModel.onGuardadoConsumido()
-            onBack()
         }
+    }
+
+    if (uiState.guardado && uiState.alertaCritica) {
+        AlertaValorCriticoDialog(
+            onCerrar = {
+                viewModel.onGuardadoConsumido()
+                onBack()
+            }
+        )
     }
 
     Scaffold(
@@ -216,6 +230,42 @@ fun DbtScreen(
                 }
             }
 
+            if (uiState.habilidad == HabilidadDbt.OTRO) {
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = uiState.habilidadOtro,
+                    onValueChange = viewModel::onHabilidadOtroChange,
+                    label = { Text("Especifica la habilidad") },
+                    singleLine = true,
+                    isError = uiState.habilidadOtroError != null,
+                    supportingText = {
+                        Text(uiState.habilidadOtroError ?: "${uiState.habilidadOtro.length}/$MAX_OTRO")
+                    },
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Sentences,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            focusManager.clearFocus()
+                            keyboardController?.hide()
+                        }
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = LemacNoteBg,
+                        unfocusedContainerColor = LemacNoteBg,
+                        errorContainerColor = LemacNoteBg,
+                        focusedBorderColor = WarmLowAccent,
+                        unfocusedBorderColor = LemacBorderSoft,
+                        focusedLabelColor = LemacGreenDark,
+                        unfocusedLabelColor = LemacGreenDark.copy(alpha = 0.7f),
+                        cursorColor = WarmLowAccent
+                    )
+                )
+            }
+
             // la habilidad es obligatoria
             uiState.habilidadError?.let { error ->
                 Text(
@@ -288,7 +338,9 @@ fun DbtScreen(
             // Siempre habilitado: guardar() valida y muestra los errores
             Button(
                 onClick = {
-                    val hayError = uiState.habilidad == null || uiState.notasError != null
+                    val hayError = uiState.habilidad == null ||
+                            (uiState.habilidad == HabilidadDbt.OTRO && uiState.habilidadOtro.isBlank()) ||
+                            uiState.notasError != null
                     if (hayError) {
                         vibrarAlGuardar(context, esError = true)
                     }
@@ -323,6 +375,7 @@ private fun iconoParaHabilidadDbt(habilidad: HabilidadDbt): ImageVector {
         HabilidadDbt.TOLERANCIA -> Icons.Outlined.Shield
         HabilidadDbt.REGULACION -> Icons.Outlined.Balance
         HabilidadDbt.EFECTIVIDAD -> Icons.Outlined.Handshake
+        HabilidadDbt.OTRO -> Icons.Outlined.Edit
         HabilidadDbt.NINGUNA -> Icons.Outlined.RemoveCircleOutline
     }
 }

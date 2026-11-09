@@ -5,5 +5,6 @@ enum class ContextoMood(val etiqueta: String) {
     SALUD("Salud Física"),
     FAMILIAR("Entorno Familiar"),
     SOCIAL("Interacción Social"),
-    AISLAMIENTO("Aislamiento")
+    AISLAMIENTO("Aislamiento"),
+    OTRO("Otro (especificar)")
 }

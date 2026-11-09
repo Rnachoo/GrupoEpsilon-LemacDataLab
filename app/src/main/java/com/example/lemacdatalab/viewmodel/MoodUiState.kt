@@ -5,11 +5,14 @@ import com.example.lemacdatalab.model.ContextoMood
 data class MoodUiState(
     val nivel: Int = 5,
     val contexto: ContextoMood? = null,
+    val contextoOtro: String = "",
     val notas: String = "",
     val contextoError: String? = null,
+    val contextoOtroError: String? = null,
     val notasError: String? = null,
     val intentosFallidos: Int = 0,
     val guardado: Boolean = false,
+    val alertaCritica: Boolean = false,
     val idRegistro: Int? = null
 ) {
     val esEdicion: Boolean get() = idRegistro != null

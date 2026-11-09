@@ -22,6 +22,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Forum
 import androidx.compose.material.icons.outlined.Groups
@@ -63,9 +64,11 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.lemacdatalab.components.AlertaValorCriticoDialog
 import com.example.lemacdatalab.components.ContextoChip
 import com.example.lemacdatalab.components.IntensidadCard
 import com.example.lemacdatalab.model.ContextoMood
+import com.example.lemacdatalab.model.MAX_OTRO
 import com.example.lemacdatalab.native.vibrarAlGuardar
 import com.example.lemacdatalab.ui.theme.LemacBorderSoft
 import com.example.lemacdatalab.ui.theme.LemacGreenDark
@@ -101,14 +104,25 @@ fun MoodScreen(
     LaunchedEffect(state.guardado) {
         if (state.guardado) {
             vibrarAlGuardar(context, esError = false)
-            scope.launch {
-                snackbarHostState.showSnackbar(
-                    if (state.esEdicion) "Cambios guardados correctamente" else "Evaluación guardada correctamente"
-                )
+            if (!state.alertaCritica) {
+                scope.launch {
+                    snackbarHostState.showSnackbar(
+                        if (state.esEdicion) "Cambios guardados correctamente" else "Evaluación guardada correctamente"
+                    )
+                }
+                viewModel.onGuardadoConsumido()
+                onBack() // <-- AHORA SIEMPRE REGRESA AL MENÚ, EVITANDO DUPLICADOS
             }
-            viewModel.onGuardadoConsumido()
-            onBack() // <-- AHORA SIEMPRE REGRESA AL MENÚ, EVITANDO DUPLICADOS
         }
+    }
+
+    if (state.guardado && state.alertaCritica) {
+        AlertaValorCriticoDialog(
+            onCerrar = {
+                viewModel.onGuardadoConsumido()
+                onBack()
+            }
+        )
     }
 
     Scaffold(
@@ -219,6 +233,42 @@ fun MoodScreen(
                 }
             }
 
+            if (state.contexto == ContextoMood.OTRO) {
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = state.contextoOtro,
+                    onValueChange = viewModel::onContextoOtroChange,
+                    label = { Text("Especifica el contexto") },
+                    singleLine = true,
+                    isError = state.contextoOtroError != null,
+                    supportingText = {
+                        Text(state.contextoOtroError ?: "${state.contextoOtro.length}/$MAX_OTRO")
+                    },
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Sentences,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            focusManager.clearFocus()
+                            keyboardController?.hide()
+                        }
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = LemacNoteBg,
+                        unfocusedContainerColor = LemacNoteBg,
+                        errorContainerColor = LemacNoteBg,
+                        focusedBorderColor = WarmLowAccent,
+                        unfocusedBorderColor = LemacBorderSoft,
+                        focusedLabelColor = LemacGreenDark,
+                        unfocusedLabelColor = LemacGreenDark.copy(alpha = 0.7f),
+                        cursorColor = WarmLowAccent
+                    )
+                )
+            }
+
             // Error de validación: contexto obligatorio
             state.contextoError?.let { error ->
                 Text(
@@ -293,7 +343,9 @@ fun MoodScreen(
             Button(
                 onClick = {
                     // Evaluación instantánea en cada tap para garantizar la vibración
-                    val hayError = state.contexto == null || state.notasError != null
+                    val hayError = state.contexto == null ||
+                            (state.contexto == ContextoMood.OTRO && state.contextoOtro.isBlank()) ||
+                            state.notasError != null
                     if (hayError) {
                         vibrarAlGuardar(context, esError = true)
                     }
@@ -329,5 +381,6 @@ private fun iconoParaContextoMood(contexto: ContextoMood): ImageVector {
         ContextoMood.FAMILIAR -> Icons.Outlined.Home
         ContextoMood.SOCIAL -> Icons.Outlined.Forum
         ContextoMood.AISLAMIENTO -> Icons.Outlined.PersonOutline
+        ContextoMood.OTRO -> Icons.Outlined.Edit
     }
 }

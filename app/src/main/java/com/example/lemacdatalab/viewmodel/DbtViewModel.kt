@@ -9,6 +9,8 @@ import com.example.lemacdatalab.data.repository.RoomRegistroRepository
 import com.example.lemacdatalab.data.SesionUsuario
 import com.example.lemacdatalab.data.repository.UsuarioRepository
 import com.example.lemacdatalab.model.HabilidadDbt
+import com.example.lemacdatalab.model.MAX_OTRO
+import com.example.lemacdatalab.model.esValorCritico
 import com.example.lemacdatalab.model.calcularRacha
 import com.example.lemacdatalab.native.NotificacionHelper
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,10 +43,15 @@ class DbtViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val registro = repository.obtenerRegistro(idUsuario, idRegistro) ?: return@launch
             _uiState.update {
+                val guardada = registro.habilidad.orEmpty()
+                val enCatalogo = HabilidadDbt.entries.firstOrNull { h ->
+                    h != HabilidadDbt.OTRO && h.etiqueta == guardada
+                }
                 it.copy(
                     idRegistro = registro.idRegistro,
                     nivelImpulso = registro.nivelImpulso ?: it.nivelImpulso,
-                    habilidad = HabilidadDbt.entries.firstOrNull { h -> h.etiqueta == registro.habilidad },
+                    habilidad = enCatalogo ?: if (guardada.isNotBlank()) HabilidadDbt.OTRO else null,
+                    habilidadOtro = if (enCatalogo == null) guardada else "",
                     notas = registro.notasOpcionales.orEmpty()
                 )
             }
@@ -56,7 +63,16 @@ class DbtViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun onHabilidadChange(habilidad: HabilidadDbt) {
-        _uiState.update { it.copy(habilidad = habilidad, habilidadError = null) }
+        _uiState.update { it.copy(habilidad = habilidad, habilidadError = null, habilidadOtroError = null) }
+    }
+
+    fun onHabilidadOtroChange(texto: String) {
+        _uiState.update {
+            it.copy(
+                habilidadOtro = texto.take(MAX_OTRO),
+                habilidadOtroError = null
+            )
+        }
     }
 
     fun onNotasChange(texto: String) {
@@ -75,6 +91,11 @@ class DbtViewModel(application: Application) : AndroidViewModel(application) {
             errorHabilidad = "Seleccionar una habilidad es obligatorio"
         }
 
+        var errorOtro: String? = null
+        if (habilidadSeleccionada == HabilidadDbt.OTRO && state.habilidadOtro.isBlank()) {
+            errorOtro = "Escribe cuál habilidad pusiste en práctica"
+        }
+
         // Validacion de regla de negocio
         var errorNotas: String? = null
         if (state.notas.length > MAX_NOTAS) {
@@ -84,15 +105,20 @@ class DbtViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         // Si hay errores, se actualiza el estado para mostrarlo
-        if (errorHabilidad != null || errorNotas != null) {
+        if (errorHabilidad != null || errorOtro != null || errorNotas != null) {
             _uiState.update {
-                it.copy(habilidadError = errorHabilidad, notasError = errorNotas)
+                it.copy(
+                    habilidadError = errorHabilidad,
+                    habilidadOtroError = errorOtro,
+                    notasError = errorNotas
+                )
             }
             return
         }
 
         // Si pasa las validaciones, guardamos en Room de forma asincrona
         val habilidad = habilidadSeleccionada ?: return
+        val habilidadGuardada = if (habilidad == HabilidadDbt.OTRO) state.habilidadOtro.trim() else habilidad.etiqueta
         guardando = true
         viewModelScope.launch {
             try {
@@ -100,14 +126,14 @@ class DbtViewModel(application: Application) : AndroidViewModel(application) {
                 if (idEdicion != null) {
                     repository.actualizarDbt(
                         idRegistro = idEdicion,
-                        habilidad = habilidad.etiqueta,
+                        habilidad = habilidadGuardada,
                         nivelImpulso = state.nivelImpulso,
                         notas = state.notas.ifBlank { null }
                     )
                 } else {
                     repository.guardarDbt(
                         idUsuario = idUsuario,
-                        habilidad = habilidad.etiqueta,
+                        habilidad = habilidadGuardada,
                         nivelImpulso = state.nivelImpulso,
                         notas = state.notas.ifBlank { null }
                     )
@@ -115,7 +141,7 @@ class DbtViewModel(application: Application) : AndroidViewModel(application) {
                     val racha = calcularRacha(repository.observarHistorial(idUsuario).first())
                     NotificacionHelper.mostrarAlertaRegistroGuardado(getApplication(), "Diario DBT", racha)
                 }
-                _uiState.update { it.copy(guardado = true) }
+                _uiState.update { it.copy(guardado = true, alertaCritica = esValorCritico(state.nivelImpulso)) }
             } finally {
                 guardando = false
             }

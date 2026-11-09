@@ -9,6 +9,8 @@ import com.example.lemacdatalab.data.repository.RoomRegistroRepository
 import com.example.lemacdatalab.data.SesionUsuario
 import com.example.lemacdatalab.data.repository.UsuarioRepository
 import com.example.lemacdatalab.model.ContextoMood
+import com.example.lemacdatalab.model.MAX_OTRO
+import com.example.lemacdatalab.model.esValorCritico
 import com.example.lemacdatalab.model.calcularRacha
 import com.example.lemacdatalab.native.NotificacionHelper
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,10 +43,15 @@ class MoodViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val registro = repository.obtenerRegistro(idUsuario, idRegistro) ?: return@launch
             _uiState.update {
+                val guardado = registro.contexto.orEmpty()
+                val enCatalogo = ContextoMood.entries.firstOrNull { c ->
+                    c != ContextoMood.OTRO && c.etiqueta == guardado
+                }
                 it.copy(
                     idRegistro = registro.idRegistro,
                     nivel = registro.nivelIntensidad ?: it.nivel,
-                    contexto = ContextoMood.entries.firstOrNull { c -> c.etiqueta == registro.contexto },
+                    contexto = enCatalogo ?: if (guardado.isNotBlank()) ContextoMood.OTRO else null,
+                    contextoOtro = if (enCatalogo == null) guardado else "",
                     notas = registro.notasOpcionales.orEmpty()
                 )
             }
@@ -56,7 +63,16 @@ class MoodViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun onContextoChange(contexto: ContextoMood) {
-        _uiState.update { it.copy(contexto = contexto, contextoError = null) }
+        _uiState.update { it.copy(contexto = contexto, contextoError = null, contextoOtroError = null) }
+    }
+
+    fun onContextoOtroChange(texto: String) {
+        _uiState.update {
+            it.copy(
+                contextoOtro = texto.take(MAX_OTRO),
+                contextoOtroError = null
+            )
+        }
     }
 
     fun onNotasChange(texto: String) {
@@ -74,11 +90,15 @@ class MoodViewModel(application: Application) : AndroidViewModel(application) {
         val s = _uiState.value
         val contexto = s.contexto
 
-        if (contexto == null || s.notas.length > MAX_NOTAS) {
+        val otroVacio = contexto == ContextoMood.OTRO && s.contextoOtro.isBlank()
+
+        if (contexto == null || otroVacio || s.notas.length > MAX_NOTAS) {
             _uiState.update {
                 it.copy(
                     contextoError = if (contexto == null)
                         "Selecciona un contexto detonante" else null,
+                    contextoOtroError = if (otroVacio)
+                        "Escribe a qué te refieres con «Otro»" else null,
                     notasError = if (s.notas.length > MAX_NOTAS)
                         "Máximo $MAX_NOTAS caracteres" else null,
                     intentosFallidos = it.intentosFallidos + 1
@@ -86,6 +106,8 @@ class MoodViewModel(application: Application) : AndroidViewModel(application) {
             }
             return
         }
+
+        val contextoGuardado = if (contexto == ContextoMood.OTRO) s.contextoOtro.trim() else contexto.etiqueta
 
         guardando = true
         viewModelScope.launch {
@@ -95,21 +117,21 @@ class MoodViewModel(application: Application) : AndroidViewModel(application) {
                     repository.actualizarMood(
                         idRegistro = idEdicion,
                         nivel = s.nivel,
-                        contexto = contexto.etiqueta,
+                        contexto = contextoGuardado,
                         notas = s.notas.ifBlank { null }
                     )
                 } else {
                     repository.guardarMood(
                         idUsuario = idUsuario,
                         nivel = s.nivel,
-                        contexto = contexto.etiqueta,
+                        contexto = contextoGuardado,
                         notas = s.notas.ifBlank { null }
                     )
                     // aviso nativo con la racha ya actualizada (solo en registros nuevos)
                     val racha = calcularRacha(repository.observarHistorial(idUsuario).first())
                     NotificacionHelper.mostrarAlertaRegistroGuardado(getApplication(), "Estado de Ánimo", racha)
                 }
-                _uiState.update { it.copy(guardado = true) }
+                _uiState.update { it.copy(guardado = true, alertaCritica = esValorCritico(s.nivel)) }
             } finally {
                 guardando = false
             }

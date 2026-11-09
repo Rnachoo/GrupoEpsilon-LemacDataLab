@@ -7,5 +7,6 @@ enum class HabilidadDbt(val etiqueta: String) {
     TOLERANCIA("Tolerancia al Malestar"),
     REGULACION("Regulación Emocional"),
     EFECTIVIDAD("Efectividad Interpersonal"),
+    OTRO("Otro (especificar)"),
     NINGUNA("Ninguna")
 }
