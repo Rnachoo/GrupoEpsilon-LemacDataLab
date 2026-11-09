@@ -3,6 +3,7 @@ package com.example.lemacdatalab
 import android.graphics.Color as ColorAndroid
 import android.os.Bundle
 import android.view.MotionEvent
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -39,6 +40,10 @@ class MainActivity : ComponentActivity() {
     // punto de entrada de la aplicacion
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.setFlags(
+            WindowManager.LayoutParams.FLAG_SECURE,
+            WindowManager.LayoutParams.FLAG_SECURE
+        )
         enableEdgeToEdge(
             // Íconos claros arriba (sobre la banda verde) y oscuros abajo (sobre fondo claro),
             // sin importar si el teléfono está en modo oscuro
