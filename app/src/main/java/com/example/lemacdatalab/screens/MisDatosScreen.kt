@@ -63,6 +63,7 @@ fun MisDatosScreen(
     val total by viewModel.totalRegistros.collectAsState()
     val context = LocalContext.current
     var confirmando by remember { mutableStateOf(false) }
+    var confirmandoExportacion by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = LemacSurfaceWarm,
@@ -117,9 +118,7 @@ fun MisDatosScreen(
                 icono = Icons.Default.Share,
                 color = VerdePrincipal,
                 habilitado = total > 0,
-                alHacerClic = {
-                    viewModel.exportar { csv -> compartirRegistrosCsv(context, csv) }
-                }
+                alHacerClic = { confirmandoExportacion = true }
             )
 
             AccionDatosCard(
@@ -131,6 +130,40 @@ fun MisDatosScreen(
                 alHacerClic = { confirmando = true }
             )
         }
+    }
+
+    if (confirmandoExportacion) {
+        AlertDialog(
+            onDismissRequest = { confirmandoExportacion = false },
+            containerColor = SuperficieBlanca,
+            title = {
+                Text(
+                    text = "Exportar registros",
+                    fontWeight = FontWeight.Bold,
+                    color = TextoPrincipal
+                )
+            },
+            text = {
+                Text(
+                    text = "Este archivo contiene datos sensibles simulados. ¿Deseas continuar con la exportación?",
+                    fontSize = 14.sp,
+                    color = TextoSecundario
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmandoExportacion = false
+                    viewModel.exportar { csv -> compartirRegistrosCsv(context, csv) }
+                }) {
+                    Text("Confirmar", fontWeight = FontWeight.Bold, color = VerdePrincipal)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmandoExportacion = false }) {
+                    Text("Cancelar", color = TextoSecundario)
+                }
+            }
+        )
     }
 
     if (confirmando) {
