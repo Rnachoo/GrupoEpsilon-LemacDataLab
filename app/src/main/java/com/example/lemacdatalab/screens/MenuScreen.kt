@@ -76,6 +76,7 @@ fun MenuScreen(
     alNavegarAdicciones: () -> Unit = {},
     alNavegarHistorial: () -> Unit = {},
     alNavegarMisDatos: () -> Unit = {},
+    alCerrarSesion: () -> Unit = {},
     contenidoViewModel: ContenidoViewModel = viewModel(factory = ContenidoViewModel.Factory),
     menuViewModel: MenuViewModel = viewModel()
 ) {
@@ -126,7 +127,8 @@ fun MenuScreen(
             },
             alAbrirAyuda = { ayudaAbierta = true },
             alAbrirBandeja = { bandejaAbierta = true },
-            alVerHistorial = alNavegarHistorial
+            alVerHistorial = alNavegarHistorial,
+            alCerrarSesion = alCerrarSesion
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -267,7 +269,8 @@ fun EncabezadoMenu(
     alAbrirGuia: () -> Unit = {},
     alAbrirAyuda: () -> Unit = {},
     alAbrirBandeja: () -> Unit = {},
-    alVerHistorial: () -> Unit = {}
+    alVerHistorial: () -> Unit = {},
+    alCerrarSesion: () -> Unit = {}
 ) {
     Box(
         modifier = Modifier
@@ -301,6 +304,14 @@ fun EncabezadoMenu(
                             color = SuperficieBlanca,
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp
+                        )
+                        Text(
+                            text = "Cerrar sesión",
+                            color = SuperficieBlanca.copy(alpha = 0.8f),
+                            fontSize = 12.sp,
+                            modifier = Modifier
+                                .padding(top = 2.dp)
+                                .clickable { alCerrarSesion() }
                         )
                     }
                 }
