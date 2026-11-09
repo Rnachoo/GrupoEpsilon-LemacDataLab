@@ -71,7 +71,13 @@ fun NavGraph(navController: NavHostController) {
                 alNavegarAnimo = { navController.navigate("animo") },
                 alNavegarAdicciones = { navController.navigate("adicciones") },
                 alNavegarHistorial = { navController.navigate("historial") },
-                alNavegarMisDatos = { navController.navigate("misdatos") }
+                alNavegarMisDatos = { navController.navigate("misdatos") },
+                alCerrarSesion = {
+                    SesionUsuario.cerrar()
+                    navController.navigate("login") {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
             )
         }
 
