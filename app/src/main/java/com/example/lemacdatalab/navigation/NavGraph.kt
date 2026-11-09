@@ -125,6 +125,7 @@ fun NavGraph(navController: NavHostController) {
         composable("editor") {
             EditorScreen(
                 onCerrarSesion = {
+                    SesionUsuario.cerrar()
                     navController.navigate("login") {
                         popUpTo(0) { inclusive = true }
                     }
