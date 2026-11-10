@@ -5,6 +5,9 @@ import android.os.SystemClock
 import androidx.core.content.edit
 import com.example.lemacdatalab.model.RolUsuario
 import com.example.lemacdatalab.model.Usuario
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 // Usuario autenticado durante la ejecución de la app
 object SesionUsuario {
@@ -49,10 +52,29 @@ object SesionUsuario {
         preferencias(context).edit { putBoolean(ONBOARDING_VISTO, true) }
     }
 
+    // guarda la versión del deslinde aceptada y la fecha, por usuario
+    fun registrarConsentimiento(context: Context) {
+        val id = identificadorSintetico
+        preferencias(context).edit {
+            putString("consentimiento_version_$id", VERSION_DESLINDE)
+            putLong("consentimiento_fecha_$id", System.currentTimeMillis())
+        }
+    }
+
+    fun consentimiento(context: Context): String? {
+        val id = identificadorSintetico
+        val version = preferencias(context).getString("consentimiento_version_$id", null) ?: return null
+        val fecha = preferencias(context).getLong("consentimiento_fecha_$id", 0L)
+        val formato = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+        return "Versión $version, aceptada el ${formato.format(Date(fecha))}"
+    }
+
     private fun preferencias(context: Context) =
         context.getSharedPreferences(PREFERENCIAS, Context.MODE_PRIVATE)
 
     private const val PREFERENCIAS = "lemac_preferencias"
     private const val ONBOARDING_VISTO = "onboarding_visto"
     private const val TIEMPO_INACTIVIDAD_MS = 5 * 60 * 1000L
+
+    private const val VERSION_DESLINDE = "1.0"
 }
