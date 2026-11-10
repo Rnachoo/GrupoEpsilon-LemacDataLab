@@ -61,6 +61,7 @@ fun MisDatosScreen(
     viewModel: MisDatosViewModel = viewModel()
 ) {
     val total by viewModel.totalRegistros.collectAsState()
+    val consentimiento = viewModel.consentimiento
     val context = LocalContext.current
     var confirmando by remember { mutableStateOf(false) }
     var confirmandoExportacion by remember { mutableStateOf(false) }
@@ -111,6 +112,28 @@ fun MisDatosScreen(
                 fontSize = 14.sp,
                 color = TextoSecundario
             )
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = SuperficieBlanca),
+                border = BorderStroke(1.dp, LemacBorderSoft),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(modifier = Modifier.padding(20.dp)) {
+                    Text(
+                        text = "Consentimiento",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextoPrincipal
+                    )
+                    Text(
+                        text = consentimiento ?: "Sin registro de consentimiento.",
+                        fontSize = 14.sp,
+                        color = TextoSecundario
+                    )
+                }
+            }
 
             AccionDatosCard(
                 titulo = "Exportar mis datos",

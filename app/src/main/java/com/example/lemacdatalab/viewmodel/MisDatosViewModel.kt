@@ -29,6 +29,9 @@ class MisDatosViewModel(application: Application) : AndroidViewModel(application
         .map { it.size }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 
+    val consentimiento: String? = SesionUsuario.consentimiento(application)
+
+
     fun exportar(alListo: (String) -> Unit) {
         viewModelScope.launch {
             alListo(registrosACsv(repository.observarHistorial(idUsuario).first()))

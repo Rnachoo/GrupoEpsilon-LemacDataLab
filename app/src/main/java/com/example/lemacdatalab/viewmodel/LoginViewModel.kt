@@ -61,6 +61,7 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                 return@launch
             }
             SesionUsuario.iniciar(usuario)
+            SesionUsuario.registrarConsentimiento(getApplication())
             val rol = RolUsuario.detectarRol(usuario.identificadorSintetico)
             _uiState.update { it.copy(ingresado = true, rol = rol) }
         }
