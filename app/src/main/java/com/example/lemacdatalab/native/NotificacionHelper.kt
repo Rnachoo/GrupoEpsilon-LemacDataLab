@@ -27,6 +27,7 @@ object NotificacionHelper {
         return permisoConcedido && NotificationManagerCompat.from(context).areNotificationsEnabled()
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun mostrarAlertaRegistroGuardado(context: Context, tipoFormulario: String, racha: Int) {
         if (!notificacionesActivas(context)) return
         crearCanal(context)
@@ -34,17 +35,20 @@ object NotificacionHelper {
         val abrirApp = context.packageManager.getLaunchIntentForPackage(context.packageName)?.let {
             PendingIntent.getActivity(context, 0, it, PendingIntent.FLAG_IMMUTABLE)
         }
-        val textoRacha = if (racha == 1) "1 día continuo" else "$racha días continuos"
+
+        // versión que se ve en la pantalla de bloqueo
+        val versionPublica = NotificationCompat.Builder(context, CHANNEL_REGISTROS)
+            .setSmallIcon(R.drawable.ic_launcher_monochrome)
+            .setContentTitle("LemacDataLab")
+            .setContentText("Tienes una notificación")
+            .build()
 
         val notificacion = NotificationCompat.Builder(context, CHANNEL_REGISTROS)
             .setSmallIcon(R.drawable.ic_launcher_monochrome)
-            .setContentTitle("Registro guardado con éxito")
-            .setContentText("Gracias por dedicarte este momento.")
-            .setStyle(
-                NotificationCompat.BigTextStyle().bigText(
-                    "Completaste $tipoFormulario. Gracias por dedicarte este momento.\nRacha actual: $textoRacha"
-                )
-            )
+            .setContentTitle("LemacDataLab")
+            .setContentText("Tienes un recordatorio pendiente")
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            .setPublicVersion(versionPublica)
             .setContentIntent(abrirApp)
             .setAutoCancel(true)
             .build()
@@ -52,7 +56,7 @@ object NotificacionHelper {
         try {
             NotificationManagerCompat.from(context).notify(ID_REGISTRO_GUARDADO, notificacion)
         } catch (e: SecurityException) {
-            // el permiso se revocó entre la verificación y el aviso: el registro ya quedó guardado
+
         }
     }
 
