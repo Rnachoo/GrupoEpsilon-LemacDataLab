@@ -2,44 +2,114 @@ package com.example.lemacdatalab.data.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import com.example.lemacdatalab.model.DbtDetalle
 import com.example.lemacdatalab.model.MoodDetalle
 import com.example.lemacdatalab.model.RegistroHistorial
 import com.example.lemacdatalab.model.RegistroMaestro
+import com.example.lemacdatalab.model.RegistroVersion
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 abstract class RegistroDetalleDao {
 
-    // ---------- CREATE ----------
+    // ---------- INSERT ----------
 
     @Insert
     abstract suspend fun insertarMaestro(registro: RegistroMaestro): Long
 
-    @Insert
+    // REPLACE: al re-guardar el mismo día se reemplaza el detalle del registro existente
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     abstract suspend fun insertarMood(detalle: MoodDetalle)
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     abstract suspend fun insertarDbt(detalle: DbtDetalle)
 
-    // Maestro y detalle se guardan juntos: si uno falla, no se guarda ninguno
+    @Insert
+    abstract suspend fun insertarVersion(version: RegistroVersion)
+
+    // ---------- LECTURAS AUXILIARES ----------
+
+    @Query(
+        "SELECT * FROM registro_maestro " +
+                "WHERE idUsuario = :idUsuario AND fechaDia = :fechaDia AND tipoArea = :tipoArea LIMIT 1"
+    )
+    abstract suspend fun buscarPorClave(idUsuario: Int, fechaDia: String, tipoArea: String): RegistroMaestro?
+
+    @Query("SELECT * FROM registro_maestro WHERE idRegistro = :idRegistro")
+    abstract suspend fun obtenerMaestro(idRegistro: Int): RegistroMaestro?
+
+    @Query("SELECT * FROM mood_detalle WHERE idRegistro = :idRegistro")
+    abstract suspend fun obtenerMoodDetalle(idRegistro: Int): MoodDetalle?
+
+    @Query("SELECT * FROM dbt_detalle WHERE idRegistro = :idRegistro")
+    abstract suspend fun obtenerDbtDetalle(idRegistro: Int): DbtDetalle?
+
+    @Query("SELECT COUNT(*) FROM registro_version WHERE idRegistro = :idRegistro")
+    abstract suspend fun contarVersiones(idRegistro: Int): Int
+
+    // ---------- GUARDAR (un registro por usuario, día y ámbito) ----------
+
+    // Si ya existe el registro del día/ámbito: guarda la versión anterior y lo actualiza.
+    // Si estaba eliminado, se reutiliza la fila para no chocar con el índice único.
     @Transaction
     open suspend fun guardarMood(registro: RegistroMaestro, nivel: Int, contexto: String) {
-        val id = insertarMaestro(registro).toInt()
+        val id = guardarMaestroDelDia(registro)
         insertarMood(MoodDetalle(idRegistro = id, nivelIntensidad = nivel, contexto = contexto))
     }
 
     @Transaction
     open suspend fun guardarDbt(registro: RegistroMaestro, habilidad: String, nivelImpulso: Int) {
-        val id = insertarMaestro(registro).toInt()
+        val id = guardarMaestroDelDia(registro)
         insertarDbt(DbtDetalle(idRegistro = id, habilidad = habilidad, nivelImpulso = nivelImpulso))
     }
 
+    private suspend fun guardarMaestroDelDia(registro: RegistroMaestro): Int {
+        val existente = buscarPorClave(registro.idUsuario, registro.fechaDia, registro.tipoArea)
+            ?: return insertarMaestro(registro).toInt()
+
+        guardarVersionAnterior(existente.idRegistro, registro.modificadoEnUtc)
+        val estado = if (existente.estadoRegistro == "eliminado") "confirmado" else "editado"
+        actualizarMaestro(existente.idRegistro, estado, registro.notasOpcionales, registro.modificadoEnUtc)
+        return existente.idRegistro
+    }
+
+    // Copia el estado actual (maestro + detalle) a registro_version antes de cambiarlo
+    @Transaction
+    open suspend fun guardarVersionAnterior(idRegistro: Int, ahoraUtc: Long) {
+        val maestro = obtenerMaestro(idRegistro) ?: return
+        val detalle = obtenerMoodDetalle(idRegistro)?.let { describirMood(it) }
+            ?: obtenerDbtDetalle(idRegistro)?.let { describirDbt(it) }
+            ?: ""
+        insertarVersion(
+            RegistroVersion(
+                idRegistro = idRegistro,
+                fechaVersionUtc = ahoraUtc,
+                estadoAnterior = maestro.estadoRegistro,
+                notasAnteriores = maestro.notasOpcionales,
+                detalleAnterior = detalle
+            )
+        )
+    }
+
+    private fun describirMood(m: MoodDetalle) =
+        "nivelIntensidad=${m.nivelIntensidad};contexto=${m.contexto};depresion=${m.depresion};" +
+                "elevacion=${m.elevacion};horasSueno=${m.horasSueno};altoRiesgo=${m.altoRiesgo};" +
+                "sintomasPsicoticos=${m.sintomasPsicoticos}"
+
+    private fun describirDbt(d: DbtDetalle) =
+        "habilidad=${d.habilidad};nivelImpulso=${d.nivelImpulso};intensidadEmocional=${d.intensidadEmocional}"
+
+    @Query(
+        "UPDATE registro_maestro SET estadoRegistro = :estado, notasOpcionales = :notas, " +
+                "estadoSync = 'pendiente', modificadoEnUtc = :ahoraUtc WHERE idRegistro = :idRegistro"
+    )
+    abstract suspend fun actualizarMaestro(idRegistro: Int, estado: String, notas: String?, ahoraUtc: Long)
+
     // ---------- READ ----------
 
-    // Historial del usuario (todos los módulos), del más reciente al más antiguo
     @Query(
         """
         SELECT r.idRegistro AS idRegistro,
@@ -82,9 +152,6 @@ abstract class RegistroDetalleDao {
 
     // ---------- UPDATE ----------
 
-    @Query("UPDATE registro_maestro SET estadoRegistro = 'editado', notasOpcionales = :notas WHERE idRegistro = :idRegistro")
-    abstract suspend fun actualizarNotas(idRegistro: Int, notas: String?)
-
     @Query(
         "UPDATE mood_detalle SET nivelIntensidad = :nivel, contexto = :contexto " +
                 "WHERE idRegistro = :idRegistro"
@@ -99,21 +166,41 @@ abstract class RegistroDetalleDao {
 
     @Transaction
     open suspend fun actualizarMood(idRegistro: Int, nivel: Int, contexto: String, notas: String?) {
-        actualizarNotas(idRegistro, notas)
+        val ahora = System.currentTimeMillis()
+        guardarVersionAnterior(idRegistro, ahora)
+        actualizarMaestro(idRegistro, "editado", notas, ahora)
         actualizarDetalleMood(idRegistro, nivel, contexto)
     }
 
     @Transaction
     open suspend fun actualizarDbt(idRegistro: Int, habilidad: String, nivelImpulso: Int, notas: String?) {
-        actualizarNotas(idRegistro, notas)
+        val ahora = System.currentTimeMillis()
+        guardarVersionAnterior(idRegistro, ahora)
+        actualizarMaestro(idRegistro, "editado", notas, ahora)
         actualizarDetalleDbt(idRegistro, habilidad, nivelImpulso)
     }
 
-    // ---------- DELETE ----------
+    // ---------- DELETE (borrado lógico) ----------
 
-    @Query("UPDATE registro_maestro SET estadoRegistro = 'eliminado' WHERE idRegistro = :idRegistro AND idUsuario = :idUsuario")
-    abstract suspend fun eliminarRegistro(idUsuario: Int, idRegistro: Int)
+    @Query(
+        "UPDATE registro_maestro SET estadoRegistro = 'eliminado', estadoSync = 'pendiente', " +
+                "modificadoEnUtc = :ahoraUtc WHERE idRegistro = :idRegistro AND idUsuario = :idUsuario"
+    )
+    abstract suspend fun marcarEliminado(idUsuario: Int, idRegistro: Int, ahoraUtc: Long)
 
-    @Query("UPDATE registro_maestro SET estadoRegistro = 'eliminado' WHERE idUsuario = :idUsuario")
-    abstract suspend fun eliminarTodos(idUsuario: Int)
+    @Query(
+        "UPDATE registro_maestro SET estadoRegistro = 'eliminado', estadoSync = 'pendiente', " +
+                "modificadoEnUtc = :ahoraUtc WHERE idUsuario = :idUsuario"
+    )
+    abstract suspend fun marcarTodosEliminados(idUsuario: Int, ahoraUtc: Long)
+
+    @Transaction
+    open suspend fun eliminarRegistro(idUsuario: Int, idRegistro: Int) {
+        marcarEliminado(idUsuario, idRegistro, System.currentTimeMillis())
+    }
+
+    @Transaction
+    open suspend fun eliminarTodos(idUsuario: Int) {
+        marcarTodosEliminados(idUsuario, System.currentTimeMillis())
+    }
 }
