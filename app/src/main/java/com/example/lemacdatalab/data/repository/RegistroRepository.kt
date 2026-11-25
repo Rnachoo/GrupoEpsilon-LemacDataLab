@@ -62,11 +62,17 @@ class RoomRegistroRepository(
         dao.eliminarTodos(idUsuario)
     }
 
-    private fun nuevoRegistro(idUsuario: Int, tipoArea: String, notas: String?) = RegistroMaestro(
-        idRegistro = 0, // 0 para que Room genere el id
-        idUsuario = idUsuario,
-        tipoArea = tipoArea,
-        fechaHoraCreacion = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date()),
-        notasOpcionales = notas
-    )
+    private fun nuevoRegistro(idUsuario: Int, tipoArea: String, notas: String?): RegistroMaestro {
+        val ahora = Date()
+        return RegistroMaestro(
+            idRegistro = 0,
+            idUsuario = idUsuario,
+            tipoArea = tipoArea,
+            fechaHoraCreacion = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(ahora),
+            notasOpcionales = notas,
+            // Día local del dispositivo; Locale.US para que los dígitos sean siempre 0-9
+            fechaDia = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(ahora),
+            modificadoEnUtc = ahora.time
+        )
+    }
 }
