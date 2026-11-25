@@ -46,7 +46,7 @@ object NotificacionHelper {
         val notificacion = NotificationCompat.Builder(context, CHANNEL_REGISTROS)
             .setSmallIcon(R.drawable.ic_launcher_monochrome)
             .setContentTitle("LemacDataLab")
-            .setContentText("Tienes un recordatorio pendiente")
+            .setContentText("Registro guardado")
             .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
             .setPublicVersion(versionPublica)
             .setContentIntent(abrirApp)
