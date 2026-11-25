@@ -13,5 +13,6 @@ data class Usuario(
     @PrimaryKey
     val idUsuario: Int,
     val identificadorSintetico: String,
-    val fechaCreacion: String
+    val fechaCreacion: String,
+    val objetivoPrueba: String? = null
 )

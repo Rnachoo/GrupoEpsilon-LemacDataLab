@@ -3,7 +3,8 @@ package com.example.lemacdatalab.model
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
-    @Entity(
+
+@Entity(
     tableName = "mood_detalle",
     foreignKeys = [
         ForeignKey(
@@ -17,6 +18,11 @@ import androidx.room.PrimaryKey
 data class MoodDetalle(
     @PrimaryKey
     val idRegistro: Int,
-    val nivelIntensidad: Int, // 1..10
-    val contexto: String
+    val nivelIntensidad: Int,
+    val contexto: String,
+    val depresion: Int = 0,
+    val elevacion: Int = 0,
+    val horasSueno: Int? = null,
+    val altoRiesgo: Boolean = false,
+    val sintomasPsicoticos: Boolean = false
 )
