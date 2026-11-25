@@ -8,11 +8,10 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-// Los ViewModels dependen de esta interfaz, no de Room directamente
 interface RegistroRepository {
     // Create
     suspend fun guardarMood(idUsuario: Int, nivel: Int, contexto: String, notas: String?)
-    suspend fun guardarDbt(idUsuario: Int, habilidad: String, nivelImpulso: Int, notas: String?)
+    suspend fun guardarDbt(idUsuario: Int, habilidad: String, intensidadEmocional: Int, notas: String?)
 
     // Read
     fun observarHistorial(idUsuario: Int): Flow<List<RegistroHistorial>>
@@ -20,9 +19,8 @@ interface RegistroRepository {
 
     // Update
     suspend fun actualizarMood(idRegistro: Int, nivel: Int, contexto: String, notas: String?)
-    suspend fun actualizarDbt(idRegistro: Int, habilidad: String, nivelImpulso: Int, notas: String?)
+    suspend fun actualizarDbt(idRegistro: Int, habilidad: String, intensidadEmocional: Int, notas: String?)
 
-    // Delete (borrado lógico: el registro pasa a estado 'eliminado' sin borrado físico)
     suspend fun eliminar(idUsuario: Int, idRegistro: Int)
 
     suspend fun eliminarTodos(idUsuario: Int)
@@ -36,8 +34,8 @@ class RoomRegistroRepository(
         dao.guardarMood(nuevoRegistro(idUsuario, "animo", notas), nivel, contexto)
     }
 
-    override suspend fun guardarDbt(idUsuario: Int, habilidad: String, nivelImpulso: Int, notas: String?) {
-        dao.guardarDbt(nuevoRegistro(idUsuario, "dbt", notas), habilidad, nivelImpulso)
+    override suspend fun guardarDbt(idUsuario: Int, habilidad: String, intensidadEmocional: Int, notas: String?) {
+        dao.guardarDbt(nuevoRegistro(idUsuario, "dbt", notas), habilidad, intensidadEmocional)
     }
 
     override fun observarHistorial(idUsuario: Int): Flow<List<RegistroHistorial>> =
@@ -50,8 +48,8 @@ class RoomRegistroRepository(
         dao.actualizarMood(idRegistro, nivel, contexto, notas)
     }
 
-    override suspend fun actualizarDbt(idRegistro: Int, habilidad: String, nivelImpulso: Int, notas: String?) {
-        dao.actualizarDbt(idRegistro, habilidad, nivelImpulso, notas)
+    override suspend fun actualizarDbt(idRegistro: Int, habilidad: String, intensidadEmocional: Int, notas: String?) {
+        dao.actualizarDbt(idRegistro, habilidad, intensidadEmocional, notas)
     }
 
     override suspend fun eliminar(idUsuario: Int, idRegistro: Int) {
@@ -65,7 +63,7 @@ class RoomRegistroRepository(
     private fun nuevoRegistro(idUsuario: Int, tipoArea: String, notas: String?): RegistroMaestro {
         val ahora = Date()
         return RegistroMaestro(
-            idRegistro = 0,
+            idRegistro = 0, // 0 para que Room genere el id
             idUsuario = idUsuario,
             tipoArea = tipoArea,
             fechaHoraCreacion = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(ahora),
