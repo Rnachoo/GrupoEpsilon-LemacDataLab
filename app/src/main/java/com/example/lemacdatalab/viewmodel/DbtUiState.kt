@@ -2,9 +2,8 @@ package com.example.lemacdatalab.viewmodel
 
 import com.example.lemacdatalab.model.HabilidadDbt
 
-// Representa el estado exacto de la pantalla DBT
 data class DbtUiState(
-    val nivelImpulso: Int = 5,
+    val intensidadEmocional: Int = 2,
     val habilidad: HabilidadDbt? = null,
     val habilidadOtro: String = "",
     val notas: String = "",

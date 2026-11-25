@@ -19,6 +19,6 @@ data class DbtDetalle(
     @PrimaryKey
     val idRegistro: Int,
     val habilidad: String,
-    val nivelImpulso: Int,
+    val nivelImpulso: Int = 0,
     val intensidadEmocional: Int = 0
 )
