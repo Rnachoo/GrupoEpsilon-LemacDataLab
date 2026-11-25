@@ -53,7 +53,8 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "lemac_database"
                 )
-                    .fallbackToDestructiveMigration(dropAllTables = true)
+                    .addMigrations(MIGRATION_3_4)
+                    .fallbackToDestructiveMigrationFrom(true, 1, 2)
                     .build().also { instancia = it }
             }
     }
