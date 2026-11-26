@@ -1,6 +1,7 @@
 package com.example.lemacdatalab.data.repository
 
 import com.example.lemacdatalab.data.dao.RegistroDetalleDao
+import com.example.lemacdatalab.model.DatosAnimo
 import com.example.lemacdatalab.model.RegistroHistorial
 import com.example.lemacdatalab.model.RegistroMaestro
 import kotlinx.coroutines.flow.Flow
@@ -10,7 +11,7 @@ import java.util.Locale
 
 interface RegistroRepository {
     // Create
-    suspend fun guardarMood(idUsuario: Int, nivel: Int, contexto: String, notas: String?)
+    suspend fun guardarMood(idUsuario: Int, datos: DatosAnimo, notas: String?)
     suspend fun guardarDbt(idUsuario: Int, habilidad: String, intensidadEmocional: Int, notas: String?)
 
     // Read
@@ -18,7 +19,7 @@ interface RegistroRepository {
     suspend fun obtenerRegistro(idUsuario: Int, idRegistro: Int): RegistroHistorial?
 
     // Update
-    suspend fun actualizarMood(idRegistro: Int, nivel: Int, contexto: String, notas: String?)
+    suspend fun actualizarMood(idRegistro: Int, datos: DatosAnimo, notas: String?)
     suspend fun actualizarDbt(idRegistro: Int, habilidad: String, intensidadEmocional: Int, notas: String?)
 
     suspend fun eliminar(idUsuario: Int, idRegistro: Int)
@@ -30,8 +31,8 @@ class RoomRegistroRepository(
     private val dao: RegistroDetalleDao
 ) : RegistroRepository {
 
-    override suspend fun guardarMood(idUsuario: Int, nivel: Int, contexto: String, notas: String?) {
-        dao.guardarMood(nuevoRegistro(idUsuario, "animo", notas), nivel, contexto)
+    override suspend fun guardarMood(idUsuario: Int, datos: DatosAnimo, notas: String?) {
+        dao.guardarMood(nuevoRegistro(idUsuario, "animo", notas), datos)
     }
 
     override suspend fun guardarDbt(idUsuario: Int, habilidad: String, intensidadEmocional: Int, notas: String?) {
@@ -44,8 +45,8 @@ class RoomRegistroRepository(
     override suspend fun obtenerRegistro(idUsuario: Int, idRegistro: Int): RegistroHistorial? =
         dao.obtenerRegistro(idUsuario, idRegistro)
 
-    override suspend fun actualizarMood(idRegistro: Int, nivel: Int, contexto: String, notas: String?) {
-        dao.actualizarMood(idRegistro, nivel, contexto, notas)
+    override suspend fun actualizarMood(idRegistro: Int, datos: DatosAnimo, notas: String?) {
+        dao.actualizarMood(idRegistro, datos, notas)
     }
 
     override suspend fun actualizarDbt(idRegistro: Int, habilidad: String, intensidadEmocional: Int, notas: String?) {

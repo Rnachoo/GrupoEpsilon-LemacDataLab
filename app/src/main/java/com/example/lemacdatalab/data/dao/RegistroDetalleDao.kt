@@ -5,11 +5,13 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import com.example.lemacdatalab.model.DatosAnimo
 import com.example.lemacdatalab.model.DbtDetalle
 import com.example.lemacdatalab.model.MoodDetalle
 import com.example.lemacdatalab.model.RegistroHistorial
 import com.example.lemacdatalab.model.RegistroMaestro
 import com.example.lemacdatalab.model.RegistroVersion
+import com.example.lemacdatalab.model.nivelResumenAnimo
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -49,9 +51,20 @@ abstract class RegistroDetalleDao {
 
     // ---------- GUARDAR (un registro por usuario, día y ámbito) ----------
     @Transaction
-    open suspend fun guardarMood(registro: RegistroMaestro, nivel: Int, contexto: String) {
+    open suspend fun guardarMood(registro: RegistroMaestro, datos: DatosAnimo) {
         val id = guardarMaestroDelDia(registro)
-        insertarMood(MoodDetalle(idRegistro = id, nivelIntensidad = nivel, contexto = contexto))
+        insertarMood(
+            MoodDetalle(
+                idRegistro = id,
+                nivelIntensidad = nivelResumenAnimo(datos.depresion, datos.elevacion),
+                contexto = datos.contexto,
+                depresion = datos.depresion,
+                elevacion = datos.elevacion,
+                horasSueno = datos.horasSueno,
+                altoRiesgo = datos.altoRiesgo,
+                sintomasPsicoticos = datos.sintomasPsicoticos
+            )
+        )
     }
 
     @Transaction
@@ -118,7 +131,12 @@ abstract class RegistroDetalleDao {
                m.nivelIntensidad AS nivelIntensidad,
                m.contexto AS contexto,
                d.habilidad AS habilidad,
-               d.intensidadEmocional AS nivelImpulso
+               d.intensidadEmocional AS nivelImpulso,
+               m.depresion AS depresion,
+               m.elevacion AS elevacion,
+               m.horasSueno AS horasSueno,
+               m.altoRiesgo AS altoRiesgo,
+               m.sintomasPsicoticos AS sintomasPsicoticos
         FROM registro_maestro r
         LEFT JOIN mood_detalle m ON m.idRegistro = r.idRegistro
         LEFT JOIN dbt_detalle d ON d.idRegistro = r.idRegistro
@@ -139,7 +157,12 @@ abstract class RegistroDetalleDao {
                m.nivelIntensidad AS nivelIntensidad,
                m.contexto AS contexto,
                d.habilidad AS habilidad,
-               d.intensidadEmocional AS nivelImpulso
+               d.intensidadEmocional AS nivelImpulso,
+               m.depresion AS depresion,
+               m.elevacion AS elevacion,
+               m.horasSueno AS horasSueno,
+               m.altoRiesgo AS altoRiesgo,
+               m.sintomasPsicoticos AS sintomasPsicoticos
         FROM registro_maestro r
         LEFT JOIN mood_detalle m ON m.idRegistro = r.idRegistro
         LEFT JOIN dbt_detalle d ON d.idRegistro = r.idRegistro
@@ -151,10 +174,21 @@ abstract class RegistroDetalleDao {
     // ---------- UPDATE ----------
 
     @Query(
-        "UPDATE mood_detalle SET nivelIntensidad = :nivel, contexto = :contexto " +
+        "UPDATE mood_detalle SET nivelIntensidad = :nivel, contexto = :contexto, " +
+                "depresion = :depresion, elevacion = :elevacion, horasSueno = :horasSueno, " +
+                "altoRiesgo = :altoRiesgo, sintomasPsicoticos = :sintomasPsicoticos " +
                 "WHERE idRegistro = :idRegistro"
     )
-    abstract suspend fun actualizarDetalleMood(idRegistro: Int, nivel: Int, contexto: String)
+    abstract suspend fun actualizarDetalleMood(
+        idRegistro: Int,
+        nivel: Int,
+        contexto: String,
+        depresion: Int,
+        elevacion: Int,
+        horasSueno: Int?,
+        altoRiesgo: Boolean,
+        sintomasPsicoticos: Boolean
+    )
 
     @Query(
         "UPDATE dbt_detalle SET habilidad = :habilidad, intensidadEmocional = :intensidadEmocional " +
@@ -163,11 +197,20 @@ abstract class RegistroDetalleDao {
     abstract suspend fun actualizarDetalleDbt(idRegistro: Int, habilidad: String, intensidadEmocional: Int)
 
     @Transaction
-    open suspend fun actualizarMood(idRegistro: Int, nivel: Int, contexto: String, notas: String?) {
+    open suspend fun actualizarMood(idRegistro: Int, datos: DatosAnimo, notas: String?) {
         val ahora = System.currentTimeMillis()
         guardarVersionAnterior(idRegistro, ahora)
         actualizarMaestro(idRegistro, "editado", notas, ahora)
-        actualizarDetalleMood(idRegistro, nivel, contexto)
+        actualizarDetalleMood(
+            idRegistro = idRegistro,
+            nivel = nivelResumenAnimo(datos.depresion, datos.elevacion),
+            contexto = datos.contexto,
+            depresion = datos.depresion,
+            elevacion = datos.elevacion,
+            horasSueno = datos.horasSueno,
+            altoRiesgo = datos.altoRiesgo,
+            sintomasPsicoticos = datos.sintomasPsicoticos
+        )
     }
 
     @Transaction
