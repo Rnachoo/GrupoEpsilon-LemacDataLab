@@ -10,8 +10,8 @@ import com.example.lemacdatalab.data.SesionUsuario
 import com.example.lemacdatalab.data.repository.UsuarioRepository
 import com.example.lemacdatalab.model.HabilidadDbt
 import com.example.lemacdatalab.model.MAX_OTRO
-import com.example.lemacdatalab.model.esValorCritico
 import com.example.lemacdatalab.model.calcularRacha
+import com.example.lemacdatalab.model.esIntensidadEmocionalCritica
 import com.example.lemacdatalab.native.NotificacionHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,18 +25,15 @@ class DbtViewModel(application: Application) : AndroidViewModel(application) {
     private val _uiState = MutableStateFlow(DbtUiState())
     val uiState: StateFlow<DbtUiState> = _uiState.asStateFlow()
 
-    // Persistencia local (Room) a traves del repositorio
     private val repository: RegistroRepository = RoomRegistroRepository(
         AppDatabase.getDatabase(application).registroDetalleDao()
     )
 
-    // Evita guardar dos veces si el usuario toca el boton repetidamente
     private var guardando = false
 
     private val idUsuario: Int
         get() = SesionUsuario.idUsuario ?: UsuarioRepository.USUARIO_PRUEBA.idUsuario
 
-    // Modo edicion: carga el registro existente en el formulario
     fun cargarParaEditar(idRegistro: Int) {
         // Si ya esta cargado (ej. rotacion de pantalla) no pisa lo que el usuario fue cambiando
         if (_uiState.value.idRegistro == idRegistro) return
@@ -49,7 +46,8 @@ class DbtViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 it.copy(
                     idRegistro = registro.idRegistro,
-                    nivelImpulso = registro.nivelImpulso ?: it.nivelImpulso,
+                    // En el historial, nivelImpulso trae la intensidad emocional (0 a 4)
+                    intensidadEmocional = registro.nivelImpulso ?: it.intensidadEmocional,
                     habilidad = enCatalogo ?: if (guardada.isNotBlank()) HabilidadDbt.OTRO else null,
                     habilidadOtro = if (enCatalogo == null) guardada else "",
                     notas = registro.notasOpcionales.orEmpty()
@@ -58,8 +56,8 @@ class DbtViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun onNivelChange(valor: Int) {
-        _uiState.update { it.copy(nivelImpulso = valor) }
+    fun onIntensidadChange(valor: Int) {
+        _uiState.update { it.copy(intensidadEmocional = valor) }
     }
 
     fun onHabilidadChange(habilidad: HabilidadDbt) {
@@ -85,26 +83,18 @@ class DbtViewModel(application: Application) : AndroidViewModel(application) {
         val state = _uiState.value
         val habilidadSeleccionada = state.habilidad
 
-        // Validacion de campo obligatorio
-        var errorHabilidad: String? = null
-        if (habilidadSeleccionada == null) {
-            errorHabilidad = "Seleccionar una habilidad es obligatorio"
-        }
+        val errorHabilidad = if (habilidadSeleccionada == null) {
+            "Seleccionar una habilidad es obligatorio"
+        } else null
 
-        var errorOtro: String? = null
-        if (habilidadSeleccionada == HabilidadDbt.OTRO && state.habilidadOtro.isBlank()) {
-            errorOtro = "Escribe cuál habilidad pusiste en práctica"
-        }
+        val errorOtro = if (habilidadSeleccionada == HabilidadDbt.OTRO && state.habilidadOtro.isBlank()) {
+            "Escribe cuál habilidad pusiste en práctica"
+        } else null
 
-        // Validacion de regla de negocio
-        var errorNotas: String? = null
-        if (state.notas.length > MAX_NOTAS) {
-            errorNotas = "Las notas exceden el límite de $MAX_NOTAS"
-        } else if (state.nivelImpulso > 7 && state.notas.isBlank()) {
-            errorNotas = "Si el impulso es mayor a 7, debes justificar en las notas"
-        }
+        val errorNotas = if (state.notas.length > MAX_NOTAS) {
+            "Las notas exceden el límite de $MAX_NOTAS"
+        } else null
 
-        // Si hay errores, se actualiza el estado para mostrarlo
         if (errorHabilidad != null || errorOtro != null || errorNotas != null) {
             _uiState.update {
                 it.copy(
@@ -116,7 +106,6 @@ class DbtViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
 
-        // Si pasa las validaciones, guardamos en Room de forma asincrona
         val habilidad = habilidadSeleccionada ?: return
         val habilidadGuardada = if (habilidad == HabilidadDbt.OTRO) state.habilidadOtro.trim() else habilidad.etiqueta
         guardando = true
@@ -127,21 +116,25 @@ class DbtViewModel(application: Application) : AndroidViewModel(application) {
                     repository.actualizarDbt(
                         idRegistro = idEdicion,
                         habilidad = habilidadGuardada,
-                        nivelImpulso = state.nivelImpulso,
+                        intensidadEmocional = state.intensidadEmocional,
                         notas = state.notas.ifBlank { null }
                     )
                 } else {
                     repository.guardarDbt(
                         idUsuario = idUsuario,
                         habilidad = habilidadGuardada,
-                        nivelImpulso = state.nivelImpulso,
+                        intensidadEmocional = state.intensidadEmocional,
                         notas = state.notas.ifBlank { null }
                     )
-                    // aviso nativo con la racha ya actualizada (solo en registros nuevos)
                     val racha = calcularRacha(repository.observarHistorial(idUsuario).first())
                     NotificacionHelper.mostrarAlertaRegistroGuardado(getApplication(), "Diario DBT", racha)
                 }
-                _uiState.update { it.copy(guardado = true, alertaCritica = esValorCritico(state.nivelImpulso)) }
+                _uiState.update {
+                    it.copy(
+                        guardado = true,
+                        alertaCritica = esIntensidadEmocionalCritica(state.intensidadEmocional)
+                    )
+                }
             } finally {
                 guardando = false
             }

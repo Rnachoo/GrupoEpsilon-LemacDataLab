@@ -9,5 +9,10 @@ data class RegistroHistorial(
     val contexto: String?,
     val habilidad: String?,
     val nivelImpulso: Int?,
-    val estadoRegistro: String = "confirmado"
+    val estadoRegistro: String = "confirmado",
+    val depresion: Int? = null,
+    val elevacion: Int? = null,
+    val horasSueno: Int? = null,
+    val altoRiesgo: Boolean? = null,
+    val sintomasPsicoticos: Boolean? = null
 )

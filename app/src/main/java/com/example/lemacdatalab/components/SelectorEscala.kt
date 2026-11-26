@@ -23,9 +23,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.lemacdatalab.model.ESCALA_MAX
+import com.example.lemacdatalab.model.ESCALA_MIN
+import com.example.lemacdatalab.model.ETIQUETAS_ESCALA
+import com.example.lemacdatalab.model.etiquetaEscala
 import com.example.lemacdatalab.native.vibrarTic
 import com.example.lemacdatalab.ui.theme.WarmHighAccent
 import com.example.lemacdatalab.ui.theme.WarmHighBg
@@ -35,49 +41,41 @@ import com.example.lemacdatalab.ui.theme.WarmMedAccent
 import com.example.lemacdatalab.ui.theme.WarmMedBg
 import kotlin.math.roundToInt
 
+// Selector reutilizable de la escala común 0 a 4: muestra número y etiqueta.
+// Sirve para Ánimo (depresión y elevación), DBT, Neurodesarrollo y Adicciones.
 @Composable
-fun IntensidadCard(
-    valor: Float,
-    onValorChange: (Float) -> Unit,
+fun SelectorEscala(
+    valor: Int,
+    onValorChange: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    etiquetaMin: String = "NULO (1)",
-    etiquetaMax: String = "ELEVADO (10)"
+    titulo: String? = null
 ) {
-    val nivel = valor.roundToInt().coerceIn(1, 10)
+    val nivel = valor.coerceIn(ESCALA_MIN, ESCALA_MAX)
+    val etiqueta = etiquetaEscala(nivel).orEmpty()
     val context = LocalContext.current
 
-    // Selección de colores según el rango (1-3 Salvia, 4-7 Arena, 8-10 Terracota)
+    // 0 y 1: salvia · 2: arena · 3 y 4: terracota
     val targetBgColor = when (nivel) {
-        in 1..3 -> WarmLowBg
-        in 4..7 -> WarmMedBg
+        0, 1 -> WarmLowBg
+        2 -> WarmMedBg
         else -> WarmHighBg
     }
-
     val targetAccentColor = when (nivel) {
-        in 1..3 -> WarmLowAccent
-        in 4..7 -> WarmMedAccent
+        0, 1 -> WarmLowAccent
+        2 -> WarmMedAccent
         else -> WarmHighAccent
     }
 
     val animatedBgColor by animateColorAsState(
         targetValue = targetBgColor,
         animationSpec = tween(durationMillis = 350),
-        label = "FondoIntensidad"
+        label = "FondoEscala"
     )
-
     val animatedAccentColor by animateColorAsState(
         targetValue = targetAccentColor,
         animationSpec = tween(durationMillis = 350),
-        label = "AcentoIntensidad"
+        label = "AcentoEscala"
     )
-
-    // Descriptor emocional dinámico
-    val descriptorEmocional = when (nivel) {
-        in 1..3 -> "En calma / Muy leve"
-        in 4..6 -> "Moderado / Presente"
-        in 7..8 -> "Elevado / Intenso"
-        else -> "Muy abrumador"
-    }
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -91,6 +89,16 @@ fun IntensidadCard(
                 .padding(horizontal = 20.dp, vertical = 22.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            if (titulo != null) {
+                Text(
+                    text = titulo,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = animatedAccentColor
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
             Text(
                 text = nivel.toString(),
                 fontSize = 52.sp,
@@ -100,13 +108,12 @@ fun IntensidadCard(
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            // Píldora semántica de validación emocional
             Surface(
                 shape = CircleShape,
                 color = animatedAccentColor.copy(alpha = 0.14f)
             ) {
                 Text(
-                    text = descriptorEmocional,
+                    text = etiqueta,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.SemiBold,
@@ -117,17 +124,19 @@ fun IntensidadCard(
             Spacer(modifier = Modifier.height(16.dp))
 
             Slider(
-                value = valor,
+                value = nivel.toFloat(),
                 onValueChange = { nuevo ->
-                    // Tic suave solo cuando cambia el número, no en cada píxel del arrastre.
-                    // Misma intensidad en todos los niveles para no sentirse alarmante.
-                    if (nuevo.roundToInt().coerceIn(1, 10) != nivel) {
+                    val nuevoNivel = nuevo.roundToInt().coerceIn(ESCALA_MIN, ESCALA_MAX)
+                    if (nuevoNivel != nivel) {
                         vibrarTic(context)
+                        onValorChange(nuevoNivel)
                     }
-                    onValorChange(nuevo)
                 },
-                valueRange = 1f..10f,
-                steps = 8,
+                valueRange = ESCALA_MIN.toFloat()..ESCALA_MAX.toFloat(),
+                steps = ESCALA_MAX - ESCALA_MIN - 1,
+                modifier = Modifier.semantics {
+                    contentDescription = "${titulo ?: "Escala"}: $nivel, $etiqueta"
+                },
                 colors = SliderDefaults.colors(
                     thumbColor = animatedAccentColor,
                     activeTrackColor = animatedAccentColor,
@@ -142,13 +151,13 @@ fun IntensidadCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = etiquetaMin,
+                    text = "${ETIQUETAS_ESCALA.first().uppercase()} ($ESCALA_MIN)",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = animatedAccentColor.copy(alpha = 0.85f)
                 )
                 Text(
-                    text = etiquetaMax,
+                    text = "${ETIQUETAS_ESCALA.last().uppercase()} ($ESCALA_MAX)",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = animatedAccentColor.copy(alpha = 0.85f)

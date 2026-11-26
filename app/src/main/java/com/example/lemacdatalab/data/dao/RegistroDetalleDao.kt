@@ -5,11 +5,13 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import com.example.lemacdatalab.model.DatosAnimo
 import com.example.lemacdatalab.model.DbtDetalle
 import com.example.lemacdatalab.model.MoodDetalle
 import com.example.lemacdatalab.model.RegistroHistorial
 import com.example.lemacdatalab.model.RegistroMaestro
 import com.example.lemacdatalab.model.RegistroVersion
+import com.example.lemacdatalab.model.nivelResumenAnimo
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -19,8 +21,6 @@ abstract class RegistroDetalleDao {
 
     @Insert
     abstract suspend fun insertarMaestro(registro: RegistroMaestro): Long
-
-    // REPLACE: al re-guardar el mismo día se reemplaza el detalle del registro existente
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     abstract suspend fun insertarMood(detalle: MoodDetalle)
 
@@ -31,7 +31,6 @@ abstract class RegistroDetalleDao {
     abstract suspend fun insertarVersion(version: RegistroVersion)
 
     // ---------- LECTURAS AUXILIARES ----------
-
     @Query(
         "SELECT * FROM registro_maestro " +
                 "WHERE idUsuario = :idUsuario AND fechaDia = :fechaDia AND tipoArea = :tipoArea LIMIT 1"
@@ -51,19 +50,33 @@ abstract class RegistroDetalleDao {
     abstract suspend fun contarVersiones(idRegistro: Int): Int
 
     // ---------- GUARDAR (un registro por usuario, día y ámbito) ----------
-
-    // Si ya existe el registro del día/ámbito: guarda la versión anterior y lo actualiza.
-    // Si estaba eliminado, se reutiliza la fila para no chocar con el índice único.
     @Transaction
-    open suspend fun guardarMood(registro: RegistroMaestro, nivel: Int, contexto: String) {
+    open suspend fun guardarMood(registro: RegistroMaestro, datos: DatosAnimo) {
         val id = guardarMaestroDelDia(registro)
-        insertarMood(MoodDetalle(idRegistro = id, nivelIntensidad = nivel, contexto = contexto))
+        insertarMood(
+            MoodDetalle(
+                idRegistro = id,
+                nivelIntensidad = nivelResumenAnimo(datos.depresion, datos.elevacion),
+                contexto = datos.contexto,
+                depresion = datos.depresion,
+                elevacion = datos.elevacion,
+                horasSueno = datos.horasSueno,
+                altoRiesgo = datos.altoRiesgo,
+                sintomasPsicoticos = datos.sintomasPsicoticos
+            )
+        )
     }
 
     @Transaction
-    open suspend fun guardarDbt(registro: RegistroMaestro, habilidad: String, nivelImpulso: Int) {
+    open suspend fun guardarDbt(registro: RegistroMaestro, habilidad: String, intensidadEmocional: Int) {
         val id = guardarMaestroDelDia(registro)
-        insertarDbt(DbtDetalle(idRegistro = id, habilidad = habilidad, nivelImpulso = nivelImpulso))
+        insertarDbt(
+            DbtDetalle(
+                idRegistro = id,
+                habilidad = habilidad,
+                intensidadEmocional = intensidadEmocional
+            )
+        )
     }
 
     private suspend fun guardarMaestroDelDia(registro: RegistroMaestro): Int {
@@ -76,7 +89,6 @@ abstract class RegistroDetalleDao {
         return existente.idRegistro
     }
 
-    // Copia el estado actual (maestro + detalle) a registro_version antes de cambiarlo
     @Transaction
     open suspend fun guardarVersionAnterior(idRegistro: Int, ahoraUtc: Long) {
         val maestro = obtenerMaestro(idRegistro) ?: return
@@ -100,7 +112,7 @@ abstract class RegistroDetalleDao {
                 "sintomasPsicoticos=${m.sintomasPsicoticos}"
 
     private fun describirDbt(d: DbtDetalle) =
-        "habilidad=${d.habilidad};nivelImpulso=${d.nivelImpulso};intensidadEmocional=${d.intensidadEmocional}"
+        "habilidad=${d.habilidad};intensidadEmocional=${d.intensidadEmocional}"
 
     @Query(
         "UPDATE registro_maestro SET estadoRegistro = :estado, notasOpcionales = :notas, " +
@@ -109,7 +121,6 @@ abstract class RegistroDetalleDao {
     abstract suspend fun actualizarMaestro(idRegistro: Int, estado: String, notas: String?, ahoraUtc: Long)
 
     // ---------- READ ----------
-
     @Query(
         """
         SELECT r.idRegistro AS idRegistro,
@@ -120,7 +131,12 @@ abstract class RegistroDetalleDao {
                m.nivelIntensidad AS nivelIntensidad,
                m.contexto AS contexto,
                d.habilidad AS habilidad,
-               d.nivelImpulso AS nivelImpulso
+               d.intensidadEmocional AS nivelImpulso,
+               m.depresion AS depresion,
+               m.elevacion AS elevacion,
+               m.horasSueno AS horasSueno,
+               m.altoRiesgo AS altoRiesgo,
+               m.sintomasPsicoticos AS sintomasPsicoticos
         FROM registro_maestro r
         LEFT JOIN mood_detalle m ON m.idRegistro = r.idRegistro
         LEFT JOIN dbt_detalle d ON d.idRegistro = r.idRegistro
@@ -141,7 +157,12 @@ abstract class RegistroDetalleDao {
                m.nivelIntensidad AS nivelIntensidad,
                m.contexto AS contexto,
                d.habilidad AS habilidad,
-               d.nivelImpulso AS nivelImpulso
+               d.intensidadEmocional AS nivelImpulso,
+               m.depresion AS depresion,
+               m.elevacion AS elevacion,
+               m.horasSueno AS horasSueno,
+               m.altoRiesgo AS altoRiesgo,
+               m.sintomasPsicoticos AS sintomasPsicoticos
         FROM registro_maestro r
         LEFT JOIN mood_detalle m ON m.idRegistro = r.idRegistro
         LEFT JOIN dbt_detalle d ON d.idRegistro = r.idRegistro
@@ -153,31 +174,51 @@ abstract class RegistroDetalleDao {
     // ---------- UPDATE ----------
 
     @Query(
-        "UPDATE mood_detalle SET nivelIntensidad = :nivel, contexto = :contexto " +
+        "UPDATE mood_detalle SET nivelIntensidad = :nivel, contexto = :contexto, " +
+                "depresion = :depresion, elevacion = :elevacion, horasSueno = :horasSueno, " +
+                "altoRiesgo = :altoRiesgo, sintomasPsicoticos = :sintomasPsicoticos " +
                 "WHERE idRegistro = :idRegistro"
     )
-    abstract suspend fun actualizarDetalleMood(idRegistro: Int, nivel: Int, contexto: String)
+    abstract suspend fun actualizarDetalleMood(
+        idRegistro: Int,
+        nivel: Int,
+        contexto: String,
+        depresion: Int,
+        elevacion: Int,
+        horasSueno: Int?,
+        altoRiesgo: Boolean,
+        sintomasPsicoticos: Boolean
+    )
 
     @Query(
-        "UPDATE dbt_detalle SET habilidad = :habilidad, nivelImpulso = :nivelImpulso " +
+        "UPDATE dbt_detalle SET habilidad = :habilidad, intensidadEmocional = :intensidadEmocional " +
                 "WHERE idRegistro = :idRegistro"
     )
-    abstract suspend fun actualizarDetalleDbt(idRegistro: Int, habilidad: String, nivelImpulso: Int)
+    abstract suspend fun actualizarDetalleDbt(idRegistro: Int, habilidad: String, intensidadEmocional: Int)
 
     @Transaction
-    open suspend fun actualizarMood(idRegistro: Int, nivel: Int, contexto: String, notas: String?) {
+    open suspend fun actualizarMood(idRegistro: Int, datos: DatosAnimo, notas: String?) {
         val ahora = System.currentTimeMillis()
         guardarVersionAnterior(idRegistro, ahora)
         actualizarMaestro(idRegistro, "editado", notas, ahora)
-        actualizarDetalleMood(idRegistro, nivel, contexto)
+        actualizarDetalleMood(
+            idRegistro = idRegistro,
+            nivel = nivelResumenAnimo(datos.depresion, datos.elevacion),
+            contexto = datos.contexto,
+            depresion = datos.depresion,
+            elevacion = datos.elevacion,
+            horasSueno = datos.horasSueno,
+            altoRiesgo = datos.altoRiesgo,
+            sintomasPsicoticos = datos.sintomasPsicoticos
+        )
     }
 
     @Transaction
-    open suspend fun actualizarDbt(idRegistro: Int, habilidad: String, nivelImpulso: Int, notas: String?) {
+    open suspend fun actualizarDbt(idRegistro: Int, habilidad: String, intensidadEmocional: Int, notas: String?) {
         val ahora = System.currentTimeMillis()
         guardarVersionAnterior(idRegistro, ahora)
         actualizarMaestro(idRegistro, "editado", notas, ahora)
-        actualizarDetalleDbt(idRegistro, habilidad, nivelImpulso)
+        actualizarDetalleDbt(idRegistro, habilidad, intensidadEmocional)
     }
 
     // ---------- DELETE (borrado lógico) ----------

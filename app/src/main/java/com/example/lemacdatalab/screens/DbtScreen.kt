@@ -66,7 +66,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.lemacdatalab.components.AlertaValorCriticoDialog
 import com.example.lemacdatalab.components.ContextoChip
-import com.example.lemacdatalab.components.IntensidadCard
+import com.example.lemacdatalab.components.SelectorEscala
 import com.example.lemacdatalab.model.HabilidadDbt
 import com.example.lemacdatalab.model.MAX_OTRO
 import com.example.lemacdatalab.native.vibrarAlGuardar
@@ -78,7 +78,6 @@ import com.example.lemacdatalab.ui.theme.WarmLowAccent
 import com.example.lemacdatalab.viewmodel.DbtViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -175,7 +174,7 @@ fun DbtScreen(
                 .padding(horizontal = 20.dp, vertical = 12.dp)
         ) {
             Text(
-                text = "Nivel de Impulso",
+                text = "Intensidad emocional",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = LemacGreenDark
@@ -184,17 +183,18 @@ fun DbtScreen(
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = "Respira un segundo. ¿Qué tan fuerte sentiste el impulso hoy?",
+                text = "Respira un segundo. ¿Qué tan intensa fue la emoción que sentiste?",
                 style = MaterialTheme.typography.bodyMedium,
                 color = LemacGreenDark.copy(alpha = 0.78f)
             )
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // IntensidadCard trabaja con Float el ViewModel guarda el nivel como Int
-            IntensidadCard(
-                valor = uiState.nivelImpulso.toFloat(),
-                onValorChange = { viewModel.onNivelChange(it.roundToInt()) }
+            // Escala común 0 a 4 con número y etiqueta
+            SelectorEscala(
+                valor = uiState.intensidadEmocional,
+                onValorChange = viewModel::onIntensidadChange,
+                titulo = "Intensidad emocional"
             )
 
             Spacer(modifier = Modifier.height(24.dp))

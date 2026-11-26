@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.lemacdatalab.components.CartaAnimoCard
+import com.example.lemacdatalab.model.ESCALA_MAX
 import com.example.lemacdatalab.model.RegistroHistorial
 import com.example.lemacdatalab.viewmodel.FiltroTipoRegistro
 import com.example.lemacdatalab.viewmodel.HistorialViewModel
@@ -379,7 +380,12 @@ private fun TarjetaRegistro(
 
                 // Píldoras de Metadatos
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    val labelIntensidad = if (registro.tipoArea == "animo") "Intensidad: ${registro.nivelIntensidad} / 10" else "Impulso: ${registro.nivelImpulso} / 10"
+                    // Escala común 0 a 4 en ambos ámbitos
+                    val labelIntensidad = if (registro.tipoArea == "animo") {
+                        "Intensidad: ${registro.nivelIntensidad} / $ESCALA_MAX"
+                    } else {
+                        "Intensidad emocional: ${registro.nivelImpulso} / $ESCALA_MAX"
+                    }
                     val labelContexto = if (registro.tipoArea == "animo") registro.contexto else registro.habilidad
 
                     // Píldora 1: Nivel

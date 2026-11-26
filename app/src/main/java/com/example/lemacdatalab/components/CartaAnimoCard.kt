@@ -30,6 +30,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.lemacdatalab.model.DIAS_CARTA_ANIMO
+import com.example.lemacdatalab.model.ESCALA_MAX
+import com.example.lemacdatalab.model.ESCALA_MIN
 import com.example.lemacdatalab.model.PERIODOS_CARTA_ANIMO
 import com.example.lemacdatalab.model.PuntoCarta
 import com.example.lemacdatalab.ui.theme.LemacBorderSoft
@@ -43,8 +45,9 @@ import com.example.lemacdatalab.ui.theme.WarmMedAccent
 import com.example.lemacdatalab.ui.theme.WarmMedBg
 import java.util.Locale
 
-private const val CORTE_BAJO = 3.5f
-private const val CORTE_ALTO = 7.5f
+// Escala 0 a 4: 0-1 salvia · 2 arena · 3-4 terracota
+private const val CORTE_BAJO = 1.5f
+private const val CORTE_ALTO = 2.5f
 
 private fun colorPunto(promedio: Float): Color = when {
     promedio < CORTE_BAJO -> WarmLowAccent
@@ -77,7 +80,7 @@ fun CartaAnimoCard(
                 color = LemacGreenDark
             )
             Text(
-                text = "Promedio diario de intensidad (1 a 10) · últimos $dias días",
+                text = "Promedio diario de intensidad ($ESCALA_MIN a $ESCALA_MAX) · últimos $dias días",
                 style = MaterialTheme.typography.bodySmall,
                 color = TextoSecundario
             )
@@ -118,8 +121,8 @@ fun CartaAnimoCard(
                         modifier = Modifier.height(ALTO_GRAFICO),
                         verticalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("10", style = MaterialTheme.typography.labelSmall, color = TextoSecundario)
-                        Text("1", style = MaterialTheme.typography.labelSmall, color = TextoSecundario)
+                        Text("$ESCALA_MAX", style = MaterialTheme.typography.labelSmall, color = TextoSecundario)
+                        Text("$ESCALA_MIN", style = MaterialTheme.typography.labelSmall, color = TextoSecundario)
                     }
                     GraficoLinea(
                         puntos = puntos,
@@ -158,7 +161,8 @@ private fun GraficoLinea(
         val altoUtil = size.height - 2 * margenV
         val anchoUtil = size.width - 2 * margenH
 
-        fun yDe(valor: Float) = margenV + (10f - valor) / 9f * altoUtil
+        fun yDe(valor: Float) =
+            margenV + (ESCALA_MAX - valor) / (ESCALA_MAX - ESCALA_MIN).toFloat() * altoUtil
         fun xDe(dia: Int) = margenH + dia.toFloat() / (dias - 1).coerceAtLeast(1) * anchoUtil
 
         // Bandas de fondo según los rangos de la escala

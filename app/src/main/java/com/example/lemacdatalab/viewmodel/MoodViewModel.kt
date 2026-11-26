@@ -4,14 +4,19 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.lemacdatalab.data.AppDatabase
+import com.example.lemacdatalab.data.SesionUsuario
 import com.example.lemacdatalab.data.repository.RegistroRepository
 import com.example.lemacdatalab.data.repository.RoomRegistroRepository
-import com.example.lemacdatalab.data.SesionUsuario
 import com.example.lemacdatalab.data.repository.UsuarioRepository
 import com.example.lemacdatalab.model.ContextoMood
+import com.example.lemacdatalab.model.CriteriosCriticos
+import com.example.lemacdatalab.model.DatosAnimo
+import com.example.lemacdatalab.model.ESCALA_MAX
+import com.example.lemacdatalab.model.ESCALA_MIN
+import com.example.lemacdatalab.model.HORAS_SUENO_MAX
 import com.example.lemacdatalab.model.MAX_OTRO
-import com.example.lemacdatalab.model.esValorCritico
 import com.example.lemacdatalab.model.calcularRacha
+import com.example.lemacdatalab.model.hayValorCritico
 import com.example.lemacdatalab.native.NotificacionHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -49,7 +54,11 @@ class MoodViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 it.copy(
                     idRegistro = registro.idRegistro,
-                    nivel = registro.nivelIntensidad ?: it.nivel,
+                    depresion = registro.depresion ?: 0,
+                    elevacion = registro.elevacion ?: 0,
+                    horasSueno = registro.horasSueno?.toString().orEmpty(),
+                    altoRiesgo = registro.altoRiesgo ?: false,
+                    sintomasPsicoticos = registro.sintomasPsicoticos ?: false,
                     contexto = enCatalogo ?: if (guardado.isNotBlank()) ContextoMood.OTRO else null,
                     contextoOtro = if (enCatalogo == null) guardado else "",
                     notas = registro.notasOpcionales.orEmpty()
@@ -58,8 +67,25 @@ class MoodViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun onNivelChange(valor: Int) {
-        _uiState.update { it.copy(nivel = valor) }
+    fun onDepresionChange(valor: Int) {
+        _uiState.update { it.copy(depresion = valor.coerceIn(ESCALA_MIN, ESCALA_MAX)) }
+    }
+
+    fun onElevacionChange(valor: Int) {
+        _uiState.update { it.copy(elevacion = valor.coerceIn(ESCALA_MIN, ESCALA_MAX)) }
+    }
+
+    fun onHorasSuenoChange(texto: String) {
+        // Solo dígitos, máximo 2 (0 a 24)
+        _uiState.update { it.copy(horasSueno = texto.filter(Char::isDigit).take(2), horasSuenoError = null) }
+    }
+
+    fun onAltoRiesgoChange(valor: Boolean) {
+        _uiState.update { it.copy(altoRiesgo = valor) }
+    }
+
+    fun onSintomasPsicoticosChange(valor: Boolean) {
+        _uiState.update { it.copy(sintomasPsicoticos = valor) }
     }
 
     fun onContextoChange(contexto: ContextoMood) {
@@ -91,8 +117,9 @@ class MoodViewModel(application: Application) : AndroidViewModel(application) {
         val contexto = s.contexto
 
         val otroVacio = contexto == ContextoMood.OTRO && s.contextoOtro.isBlank()
+        val horasError = if (!s.horasSuenoValidas) "Ingresa un número entre 0 y $HORAS_SUENO_MAX" else null
 
-        if (contexto == null || otroVacio || s.notas.length > MAX_NOTAS) {
+        if (contexto == null || otroVacio || s.notas.length > MAX_NOTAS || horasError != null) {
             _uiState.update {
                 it.copy(
                     contextoError = if (contexto == null)
@@ -101,13 +128,29 @@ class MoodViewModel(application: Application) : AndroidViewModel(application) {
                         "Escribe a qué te refieres con «Otro»" else null,
                     notasError = if (s.notas.length > MAX_NOTAS)
                         "Máximo $MAX_NOTAS caracteres" else null,
+                    horasSuenoError = horasError,
                     intentosFallidos = it.intentosFallidos + 1
                 )
             }
             return
         }
 
-        val contextoGuardado = if (contexto == ContextoMood.OTRO) s.contextoOtro.trim() else contexto.etiqueta
+        val horas = s.horasSueno.toIntOrNull()
+        val datos = DatosAnimo(
+            depresion = s.depresion,
+            elevacion = s.elevacion,
+            horasSueno = horas,
+            altoRiesgo = s.altoRiesgo,
+            sintomasPsicoticos = s.sintomasPsicoticos,
+            contexto = if (contexto == ContextoMood.OTRO) s.contextoOtro.trim() else contexto.etiqueta
+        )
+        val esCritico = hayValorCritico(
+            CriteriosCriticos(
+                altoRiesgo = s.altoRiesgo,
+                sintomasPsicoticos = s.sintomasPsicoticos,
+                horasSueno = horas
+            )
+        )
 
         guardando = true
         viewModelScope.launch {
@@ -116,22 +159,20 @@ class MoodViewModel(application: Application) : AndroidViewModel(application) {
                 if (idEdicion != null) {
                     repository.actualizarMood(
                         idRegistro = idEdicion,
-                        nivel = s.nivel,
-                        contexto = contextoGuardado,
+                        datos = datos,
                         notas = s.notas.ifBlank { null }
                     )
                 } else {
                     repository.guardarMood(
                         idUsuario = idUsuario,
-                        nivel = s.nivel,
-                        contexto = contextoGuardado,
+                        datos = datos,
                         notas = s.notas.ifBlank { null }
                     )
                     // aviso nativo con la racha ya actualizada (solo en registros nuevos)
                     val racha = calcularRacha(repository.observarHistorial(idUsuario).first())
                     NotificacionHelper.mostrarAlertaRegistroGuardado(getApplication(), "Estado de Ánimo", racha)
                 }
-                _uiState.update { it.copy(guardado = true, alertaCritica = esValorCritico(s.nivel)) }
+                _uiState.update { it.copy(guardado = true, alertaCritica = esCritico) }
             } finally {
                 guardando = false
             }
