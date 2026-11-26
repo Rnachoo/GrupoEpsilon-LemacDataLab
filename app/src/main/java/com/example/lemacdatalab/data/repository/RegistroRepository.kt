@@ -43,7 +43,7 @@ class RoomRegistroRepository(
     }
 
     override suspend fun guardarNeuro(idUsuario: Int, datos: DatosNeuro, notas: String?) {
-        dao.guardarNeuro(nuevoRegistro(idUsuario, "neuro", notas), datos)
+        dao.guardarNeuro(nuevoRegistro(idUsuario, "neurodesarrollo", notas), datos)
     }
 
     override fun observarHistorial(idUsuario: Int): Flow<List<RegistroHistorial>> =
@@ -75,12 +75,11 @@ class RoomRegistroRepository(
     private fun nuevoRegistro(idUsuario: Int, tipoArea: String, notas: String?): RegistroMaestro {
         val ahora = Date()
         return RegistroMaestro(
-            idRegistro = 0, // 0 para que Room genere el id
+            idRegistro = 0,
             idUsuario = idUsuario,
             tipoArea = tipoArea,
             fechaHoraCreacion = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(ahora),
             notasOpcionales = notas,
-            // Día local del dispositivo; Locale.US para que los dígitos sean siempre 0-9
             fechaDia = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(ahora),
             modificadoEnUtc = ahora.time
         )

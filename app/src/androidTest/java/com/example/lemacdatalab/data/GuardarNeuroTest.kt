@@ -44,7 +44,7 @@ class GuardarNeuroTest {
 
         val historial = repository.observarHistorial(1).first()
         assertEquals(1, historial.size)
-        assertEquals("neuro", historial[0].tipoArea)
+        assertEquals("neurodesarrollo", historial[0].tipoArea)
         assertEquals("Rutina", historial[0].tipoEntrada)
         assertEquals(3, historial[0].intensidadNeuro)
         assertEquals("Pausa breve", historial[0].estrategia)
