@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- permiso de red para cliente Retrofit / API REST -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <!-- permiso de vibracion-->
     <uses-permission android:name="android.permission.VIBRATE" />
     <!-- permiso de notificaciones (Android 13+ lo pide en tiempo de ejecución) -->
