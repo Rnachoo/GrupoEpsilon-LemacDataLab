@@ -5,6 +5,10 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import com.example.lemacdatalab.data.remote.RegistroDto
+import com.example.lemacdatalab.data.remote.ResultadoConflicto
+import com.example.lemacdatalab.data.remote.resolverConflicto
+import com.example.lemacdatalab.model.AdiccionDetalle
 import com.example.lemacdatalab.model.DatosAnimo
 import com.example.lemacdatalab.model.DatosNeuro
 import com.example.lemacdatalab.model.DbtDetalle
@@ -33,6 +37,9 @@ abstract class RegistroDetalleDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     abstract suspend fun insertarNeuro(detalle: NeuroDetalle)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    abstract suspend fun insertarAdiccion(detalle: AdiccionDetalle)
+
     @Insert
     abstract suspend fun insertarVersion(version: RegistroVersion)
 
@@ -56,8 +63,14 @@ abstract class RegistroDetalleDao {
     @Query("SELECT * FROM neuro_detalle WHERE idRegistro = :idRegistro")
     abstract suspend fun obtenerNeuroDetalle(idRegistro: Int): NeuroDetalle?
 
+    @Query("SELECT * FROM adiccion_detalle WHERE idRegistro = :idRegistro")
+    abstract suspend fun obtenerAdiccionDetalle(idRegistro: Int): AdiccionDetalle?
+
     @Query("SELECT COUNT(*) FROM registro_version WHERE idRegistro = :idRegistro")
     abstract suspend fun contarVersiones(idRegistro: Int): Int
+
+    @Query("SELECT * FROM registro_version WHERE idRegistro = :idRegistro ORDER BY fechaVersionUtc DESC, idVersion DESC")
+    abstract suspend fun obtenerVersiones(idRegistro: Int): List<RegistroVersion>
 
     // ---------- GUARDAR (un registro por usuario, día y ámbito) ----------
 
@@ -120,6 +133,7 @@ abstract class RegistroDetalleDao {
         val detalle = obtenerMoodDetalle(idRegistro)?.let { describirMood(it) }
             ?: obtenerDbtDetalle(idRegistro)?.let { describirDbt(it) }
             ?: obtenerNeuroDetalle(idRegistro)?.let { describirNeuro(it) }
+            ?: obtenerAdiccionDetalle(idRegistro)?.let { describirAdiccion(it) }
             ?: ""
         insertarVersion(
             RegistroVersion(
@@ -143,6 +157,10 @@ abstract class RegistroDetalleDao {
     private fun describirNeuro(n: NeuroDetalle) =
         "tipoEntrada=${n.tipoEntrada};intensidad=${n.intensidad};estrategia=${n.estrategia};" +
                 "resultadoPercibido=${n.resultadoPercibido}"
+
+    private fun describirAdiccion(a: AdiccionDetalle) =
+        "craving=${a.craving};desencadenante=${a.desencadenante};" +
+                "accionProtectora=${a.accionProtectora};estadoObjetivo=${a.estadoObjetivo}"
 
     @Query(
         "UPDATE registro_maestro SET estadoRegistro = :estado, notasOpcionales = :notas, " +
@@ -321,5 +339,123 @@ abstract class RegistroDetalleDao {
     @Transaction
     open suspend fun eliminarTodos(idUsuario: Int) {
         marcarTodosEliminados(idUsuario, System.currentTimeMillis())
+    }
+
+    // ---------- SINCRONIZACIÓN Y COLA DE PENDIENTES ----------
+
+    @Query(
+        "SELECT * FROM registro_maestro WHERE idUsuario = :idUsuario AND estadoSync = 'pendiente' " +
+                "ORDER BY modificadoEnUtc ASC, idRegistro ASC"
+    )
+    abstract suspend fun obtenerPendientes(idUsuario: Int): List<RegistroMaestro>
+
+    @Query("SELECT COUNT(*) FROM registro_maestro WHERE idUsuario = :idUsuario AND estadoSync = 'pendiente'")
+    abstract fun observarCantidadPendientes(idUsuario: Int): Flow<Int>
+
+    @Query("UPDATE registro_maestro SET estadoSync = :estadoSync WHERE idRegistro = :idRegistro")
+    abstract suspend fun actualizarEstadoSync(idRegistro: Int, estadoSync: String)
+
+    @Query(
+        "UPDATE registro_maestro SET estadoRegistro = :estadoRegistro, notasOpcionales = :notas, " +
+                "estadoSync = :estadoSync, modificadoEnUtc = :modificadoEnUtc WHERE idRegistro = :idRegistro"
+    )
+    abstract suspend fun actualizarMaestroDesdeSync(
+        idRegistro: Int,
+        estadoRegistro: String,
+        notas: String?,
+        estadoSync: String,
+        modificadoEnUtc: Long
+    )
+
+    open suspend fun construirDto(maestro: RegistroMaestro): RegistroDto {
+        val mood = if (maestro.tipoArea == "animo") obtenerMoodDetalle(maestro.idRegistro) else null
+        val dbt = if (maestro.tipoArea == "dbt") obtenerDbtDetalle(maestro.idRegistro) else null
+        val neuro = if (maestro.tipoArea == "neurodesarrollo") obtenerNeuroDetalle(maestro.idRegistro) else null
+        val adiccion = if (maestro.tipoArea == "adicciones") obtenerAdiccionDetalle(maestro.idRegistro) else null
+
+        return RegistroDto(
+            idRegistro = maestro.idRegistro,
+            idUsuario = maestro.idUsuario,
+            tipoArea = maestro.tipoArea,
+            fechaHoraCreacion = maestro.fechaHoraCreacion,
+            fechaDia = maestro.fechaDia,
+            notasOpcionales = maestro.notasOpcionales,
+            estadoRegistro = maestro.estadoRegistro,
+            modificadoEnUtc = maestro.modificadoEnUtc,
+            nivelIntensidad = mood?.nivelIntensidad,
+            contexto = mood?.contexto,
+            depresion = mood?.depresion,
+            elevacion = mood?.elevacion,
+            horasSueno = mood?.horasSueno,
+            altoRiesgo = mood?.altoRiesgo,
+            sintomasPsicoticos = mood?.sintomasPsicoticos,
+            habilidad = dbt?.habilidad,
+            intensidadEmocional = dbt?.intensidadEmocional,
+            tipoEntrada = neuro?.tipoEntrada,
+            intensidadNeuro = neuro?.intensidad,
+            estrategia = neuro?.estrategia,
+            resultadoPercibido = neuro?.resultadoPercibido,
+            craving = adiccion?.craving,
+            desencadenante = adiccion?.desencadenante,
+            accionProtectora = adiccion?.accionProtectora,
+            estadoObjetivo = adiccion?.estadoObjetivo
+        )
+    }
+
+    open suspend fun obtenerPendientesDto(idUsuario: Int): List<RegistroDto> =
+        obtenerPendientes(idUsuario).map { construirDto(it) }
+
+    @Transaction
+    open suspend fun aplicarCambioRemoto(remoto: RegistroDto): ResultadoConflicto? {
+        val fechaDia = remoto.fechaDia.ifBlank { remoto.fechaHoraCreacion.take(10) }
+        val existente = buscarPorClave(remoto.idUsuario, fechaDia, remoto.tipoArea)
+
+        if (existente == null) {
+            val nuevoId = insertarMaestro(
+                remoto.copy(idRegistro = 0, fechaDia = fechaDia)
+                    .aRegistroMaestro(estadoSync = "sincronizado")
+            ).toInt()
+            insertarDetalleDesdeDto(nuevoId, remoto)
+            return null
+        }
+
+        val localDto = construirDto(existente)
+        val mismoContenido = localDto.modificadoEnUtc == remoto.modificadoEnUtc &&
+                localDto.estadoRegistro == remoto.estadoRegistro &&
+                localDto.notasOpcionales == remoto.notasOpcionales &&
+                localDto.describirDetalle() == remoto.describirDetalle()
+
+        if (mismoContenido) {
+            if (existente.estadoSync != "sincronizado") {
+                actualizarEstadoSync(existente.idRegistro, "sincronizado")
+            }
+            return null
+        }
+
+        val resultado = resolverConflicto(
+            local = localDto,
+            remoto = remoto.copy(idRegistro = existente.idRegistro, fechaDia = fechaDia)
+        )
+        insertarVersion(resultado.versionDescartada.copy(idRegistro = existente.idRegistro))
+
+        val nuevoEstadoSync = if (resultado.ganoRemoto) "sincronizado" else existente.estadoSync
+        actualizarMaestroDesdeSync(
+            idRegistro = existente.idRegistro,
+            estadoRegistro = resultado.ganador.estadoRegistro,
+            notas = resultado.ganador.notasOpcionales,
+            estadoSync = nuevoEstadoSync,
+            modificadoEnUtc = resultado.ganador.modificadoEnUtc
+        )
+        if (resultado.ganador.estadoRegistro != "eliminado") {
+            insertarDetalleDesdeDto(existente.idRegistro, resultado.ganador)
+        }
+        return resultado
+    }
+
+    private suspend fun insertarDetalleDesdeDto(idRegistroLocal: Int, dto: RegistroDto) {
+        dto.aMoodDetalle(idRegistroLocal)?.let { insertarMood(it) }
+        dto.aDbtDetalle(idRegistroLocal)?.let { insertarDbt(it) }
+        dto.aNeuroDetalle(idRegistroLocal)?.let { insertarNeuro(it) }
+        dto.aAdiccionDetalle(idRegistroLocal)?.let { insertarAdiccion(it) }
     }
 }
