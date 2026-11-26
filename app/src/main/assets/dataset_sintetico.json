@@ -1,0 +1,183 @@
+{
+  "usuarios": [
+    {
+      "idUsuario": 1,
+      "identificadorSintetico": "AX-7B99",
+      "rol": "USUARIO",
+      "fechaCreacion": "2026-10-12",
+      "objetivoAdicciones": "Mantener abstinencia diaria y aplicar pausas activas ante el estrés"
+    },
+    {
+      "idUsuario": 2,
+      "identificadorSintetico": "ADM-0001",
+      "rol": "ADMIN",
+      "fechaCreacion": "2026-10-12",
+      "objetivoAdicciones": null
+    },
+    {
+      "idUsuario": 3,
+      "identificadorSintetico": "EDT-0001",
+      "rol": "EDITOR",
+      "fechaCreacion": "2026-10-12",
+      "objetivoAdicciones": null
+    },
+    {
+      "idUsuario": 4,
+      "identificadorSintetico": "BZ-4M12",
+      "rol": "USUARIO",
+      "fechaCreacion": "2026-10-12",
+      "objetivoAdicciones": "Reducir consumo impulsivo y contactar red de apoyo ante craving alto"
+    }
+  ],
+  "consentimientos": [
+    {
+      "identificadorSintetico": "AX-7B99",
+      "version": "1.0",
+      "aceptado": true,
+      "fechaAceptacionUtc": 1760270400000,
+      "texto": "LemacDataLab utiliza identificadores sintéticos y datos simulados. No constituye diagnóstico clínico ni servicio de urgencias."
+    },
+    {
+      "identificadorSintetico": "ADM-0001",
+      "version": "1.0",
+      "aceptado": true,
+      "fechaAceptacionUtc": 1760270400000,
+      "texto": "LemacDataLab utiliza identificadores sintéticos y datos simulados. No constituye diagnóstico clínico ni servicio de urgencias."
+    },
+    {
+      "identificadorSintetico": "EDT-0001",
+      "version": "1.0",
+      "aceptado": true,
+      "fechaAceptacionUtc": 1760270400000,
+      "texto": "LemacDataLab utiliza identificadores sintéticos y datos simulados. No constituye diagnóstico clínico ni servicio de urgencias."
+    },
+    {
+      "identificadorSintetico": "BZ-4M12",
+      "version": "1.0",
+      "aceptado": false,
+      "fechaAceptacionUtc": null,
+      "texto": "LemacDataLab utiliza identificadores sintéticos y datos simulados. No constituye diagnóstico clínico ni servicio de urgencias."
+    }
+  ],
+  "catalogos": {
+    "contextosAnimo": [
+      "Ámbito Laboral",
+      "Relaciones Int.",
+      "Salud Física",
+      "Entorno Familiar",
+      "Interacción Social",
+      "Aislamiento",
+      "Otro (especificar)"
+    ],
+    "habilidadesDbt": [
+      "Aceptación Radical",
+      "Mindfulness",
+      "Tolerancia al Malestar",
+      "Regulación Emocional",
+      "Efectividad Interpersonal",
+      "Otro (especificar)",
+      "Ninguna"
+    ],
+    "tiposEntradaNeuro": [
+      "Rutina",
+      "Tarea",
+      "Sobrecarga"
+    ],
+    "estrategiasNeuro": [
+      "Pausa breve",
+      "Lista de pasos",
+      "Temporizador",
+      "Respiración o movimiento",
+      "Pedir ayuda",
+      "Ninguna",
+      "Otro (especificar)"
+    ],
+    "resultadosNeuro": [
+      "Me ayudó",
+      "Me ayudó en parte",
+      "No me ayudó"
+    ],
+    "desencadenantesAdiccion": [
+      "Estrés o sobrecarga",
+      "Contexto social",
+      "Aislamiento",
+      "Insomnio o cansancio",
+      "Conflicto interpersonal",
+      "Ninguno",
+      "Otro (especificar)"
+    ],
+    "accionesProtectorasAdiccion": [
+      "Contactar red de apoyo",
+      "Salir a caminar o ejercicio",
+      "Técnica de respiración",
+      "Cambiar de ambiente",
+      "Posponer 15 minutos",
+      "Ninguna",
+      "Otro (especificar)"
+    ],
+    "estadosObjetivoAdiccion": [
+      "Cumplido",
+      "Parcialmente cumplido",
+      "No cumplido"
+    ]
+  },
+  "registros": [
+    {
+      "idRegistro": 101,
+      "idUsuario": 1,
+      "tipoArea": "animo",
+      "fechaHoraCreacion": "2026-10-28 09:15:00",
+      "fechaDia": "2026-10-28",
+      "notasOpcionales": "Jornada tranquila de trabajo",
+      "estadoRegistro": "confirmado",
+      "modificadoEnUtc": 1761642900000,
+      "nivelIntensidad": 2,
+      "contexto": "Ámbito Laboral",
+      "depresion": 1,
+      "elevacion": 2,
+      "horasSueno": 7,
+      "altoRiesgo": false,
+      "sintomasPsicoticos": false
+    },
+    {
+      "idRegistro": 102,
+      "idUsuario": 1,
+      "tipoArea": "dbt",
+      "fechaHoraCreacion": "2026-10-28 19:30:00",
+      "fechaDia": "2026-10-28",
+      "notasOpcionales": "Práctica de respiración consciente",
+      "estadoRegistro": "confirmado",
+      "modificadoEnUtc": 1761679800000,
+      "habilidad": "Mindfulness",
+      "intensidadEmocional": 1
+    },
+    {
+      "idRegistro": 103,
+      "idUsuario": 1,
+      "tipoArea": "neurodesarrollo",
+      "fechaHoraCreacion": "2026-10-29 11:00:00",
+      "fechaDia": "2026-10-29",
+      "notasOpcionales": "Dividí el informe en bloques de 20 minutos",
+      "estadoRegistro": "confirmado",
+      "modificadoEnUtc": 1761735600000,
+      "tipoEntrada": "Tarea",
+      "intensidadNeuro": 2,
+      "estrategia": "Lista de pasos",
+      "resultadoPercibido": "Me ayudó"
+    },
+    {
+      "idRegistro": 104,
+      "idUsuario": 1,
+      "tipoArea": "adicciones",
+      "fechaHoraCreacion": "2026-10-29 21:00:00",
+      "fechaDia": "2026-10-29",
+      "notasOpcionales": "Caminata corta al terminar el día",
+      "estadoRegistro": "confirmado",
+      "modificadoEnUtc": 1761771600000,
+      "craving": 1,
+      "desencadenante": "Estrés o sobrecarga",
+      "accionProtectora": "Salir a caminar o ejercicio",
+      "estadoObjetivo": "Cumplido"
+    }
+  ]
+}
