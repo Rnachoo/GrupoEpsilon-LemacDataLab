@@ -18,5 +18,9 @@ data class RegistroHistorial(
     val tipoEntrada: String? = null,
     val intensidadNeuro: Int? = null,
     val estrategia: String? = null,
-    val resultadoPercibido: String? = null
+    val resultadoPercibido: String? = null,
+    val craving: Int? = null,
+    val desencadenante: String? = null,
+    val accionProtectora: String? = null,
+    val estadoObjetivo: String? = null
 )

@@ -171,11 +171,16 @@ abstract class RegistroDetalleDao {
                n.tipoEntrada AS tipoEntrada,
                n.intensidad AS intensidadNeuro,
                n.estrategia AS estrategia,
-               n.resultadoPercibido AS resultadoPercibido
+               n.resultadoPercibido AS resultadoPercibido,
+               a.craving AS craving,
+               a.desencadenante AS desencadenante,
+               a.accionProtectora AS accionProtectora,
+               a.estadoObjetivo AS estadoObjetivo
         FROM registro_maestro r
         LEFT JOIN mood_detalle m ON m.idRegistro = r.idRegistro
         LEFT JOIN dbt_detalle d ON d.idRegistro = r.idRegistro
         LEFT JOIN neuro_detalle n ON n.idRegistro = r.idRegistro
+        LEFT JOIN adiccion_detalle a ON a.idRegistro = r.idRegistro
         WHERE r.idUsuario = :idUsuario AND r.estadoRegistro != 'eliminado'
         ORDER BY r.fechaHoraCreacion DESC, r.idRegistro DESC
         """
@@ -202,11 +207,16 @@ abstract class RegistroDetalleDao {
                n.tipoEntrada AS tipoEntrada,
                n.intensidad AS intensidadNeuro,
                n.estrategia AS estrategia,
-               n.resultadoPercibido AS resultadoPercibido
+               n.resultadoPercibido AS resultadoPercibido,
+               a.craving AS craving,
+               a.desencadenante AS desencadenante,
+               a.accionProtectora AS accionProtectora,
+               a.estadoObjetivo AS estadoObjetivo
         FROM registro_maestro r
         LEFT JOIN mood_detalle m ON m.idRegistro = r.idRegistro
         LEFT JOIN dbt_detalle d ON d.idRegistro = r.idRegistro
         LEFT JOIN neuro_detalle n ON n.idRegistro = r.idRegistro
+        LEFT JOIN adiccion_detalle a ON a.idRegistro = r.idRegistro
         WHERE r.idRegistro = :idRegistro AND r.idUsuario = :idUsuario AND r.estadoRegistro != 'eliminado'
         """
     )

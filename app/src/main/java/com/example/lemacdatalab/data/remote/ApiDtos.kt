@@ -229,7 +229,11 @@ data class RegistroDto(
             tipoEntrada = tipoEntrada,
             intensidadNeuro = intensidadNeuro,
             estrategia = estrategia,
-            resultadoPercibido = resultadoPercibido
+            resultadoPercibido = resultadoPercibido,
+            craving = craving,
+            desencadenante = desencadenante,
+            accionProtectora = accionProtectora,
+            estadoObjetivo = estadoObjetivo
         )
     }
 
