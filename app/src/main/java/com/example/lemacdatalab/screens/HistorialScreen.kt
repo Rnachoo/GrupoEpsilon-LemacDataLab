@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.CloudQueue
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.outlined.Spa
@@ -72,9 +73,13 @@ import com.example.lemacdatalab.viewmodel.HistorialViewModel
 // Paleta cromática específica para el Historial
 private val ColorDbt = Color(0xFF8EAF9D) // Verde Salvia
 private val ColorMood = Color(0xFFD9822B) // Terracota Cálido
+private val ColorNeuro = Color(0xFF7B8FB5) // Azul grisáceo
 private val ColorFondoNotas = Color(0xFFF8FAF9) // Fondo de lectura
 private val VerdePrincipal = Color(0xFF2B4C3B) // Para el chip seleccionado
 private val BordeSuave = Color(0xFFE4E4E0)
+
+// Ámbitos que se pueden editar desde el historial
+private val AREAS_EDITABLES = setOf("animo", "dbt", "neurodesarrollo")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -269,9 +274,14 @@ private fun TarjetaRegistro(
     val colorFranja = when (registro.tipoArea) {
         "animo" -> ColorMood
         "dbt" -> ColorDbt
+        "neurodesarrollo" -> ColorNeuro
         else -> MaterialTheme.colorScheme.outlineVariant
     }
-    val iconoArea = if (registro.tipoArea == "animo") Icons.Default.CloudQueue else Icons.Default.MenuBook
+    val iconoArea = when (registro.tipoArea) {
+        "animo" -> Icons.Default.CloudQueue
+        "neurodesarrollo" -> Icons.Default.Face
+        else -> Icons.Default.MenuBook
+    }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -347,7 +357,7 @@ private fun TarjetaRegistro(
 
                     // Botones de acción suaves
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        if (registro.tipoArea == "animo" || registro.tipoArea == "dbt") {
+                        if (registro.tipoArea in AREAS_EDITABLES) {
                             IconButton(
                                 onClick = onEditar,
                                 modifier = Modifier
@@ -380,13 +390,17 @@ private fun TarjetaRegistro(
 
                 // Píldoras de Metadatos
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    // Escala común 0 a 4 en ambos ámbitos
-                    val labelIntensidad = if (registro.tipoArea == "animo") {
-                        "Intensidad: ${registro.nivelIntensidad} / $ESCALA_MAX"
-                    } else {
-                        "Intensidad emocional: ${registro.nivelImpulso} / $ESCALA_MAX"
+                    // Escala común 0 a 4 en todos los ámbitos
+                    val labelIntensidad = when (registro.tipoArea) {
+                        "animo" -> "Intensidad: ${registro.nivelIntensidad} / $ESCALA_MAX"
+                        "neurodesarrollo" -> "Intensidad: ${registro.intensidadNeuro} / $ESCALA_MAX"
+                        else -> "Intensidad emocional: ${registro.nivelImpulso} / $ESCALA_MAX"
                     }
-                    val labelContexto = if (registro.tipoArea == "animo") registro.contexto else registro.habilidad
+                    val labelContexto = when (registro.tipoArea) {
+                        "animo" -> registro.contexto
+                        "neurodesarrollo" -> registro.estrategia
+                        else -> registro.habilidad
+                    }
 
                     // Píldora 1: Nivel
                     Surface(
@@ -404,7 +418,7 @@ private fun TarjetaRegistro(
                         }
                     }
 
-                    // Píldora 2: Contexto/Habilidad
+                    // Píldora 2: Contexto / Habilidad / Estrategia
                     if (labelContexto != null) {
                         Surface(
                             shape = CircleShape,
@@ -425,6 +439,19 @@ private fun TarjetaRegistro(
                                 Text(text = labelContexto, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Medium)
                             }
                         }
+                    }
+                }
+
+                // Neurodesarrollo: tipo de entrada y resultado percibido
+                if (registro.tipoArea == "neurodesarrollo") {
+                    val detalle = listOfNotNull(registro.tipoEntrada, registro.resultadoPercibido)
+                        .joinToString(" · ")
+                    if (detalle.isNotEmpty()) {
+                        Text(
+                            text = detalle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
 
