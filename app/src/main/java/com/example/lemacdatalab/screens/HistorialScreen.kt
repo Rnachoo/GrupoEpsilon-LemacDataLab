@@ -2,6 +2,7 @@ package com.example.lemacdatalab.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -154,10 +156,11 @@ fun HistorialScreen(
                 .padding(padding)
                 .fillMaxSize()
         ) {
-            // Barra Sticky de FilterChip
+            // Barra de FilterChip: se desliza horizontalmente si no caben todos
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -168,11 +171,13 @@ fun HistorialScreen(
                         FiltroTipoRegistro.TODOS -> "Todos"
                         FiltroTipoRegistro.MOOD -> "Ánimo"
                         FiltroTipoRegistro.DBT -> "DBT"
+                        FiltroTipoRegistro.NEURO -> "Neuro"
                     }
                     val icono = when (filtroEnum) {
                         FiltroTipoRegistro.TODOS -> Icons.Default.List
                         FiltroTipoRegistro.MOOD -> Icons.Default.CloudQueue
                         FiltroTipoRegistro.DBT -> Icons.Default.MenuBook
+                        FiltroTipoRegistro.NEURO -> Icons.Default.Face
                     }
 
                     FilterChip(
@@ -215,7 +220,11 @@ fun HistorialScreen(
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(
-                                imageVector = if (filtroActual == FiltroTipoRegistro.MOOD) Icons.Default.CloudQueue else Icons.Default.MenuBook,
+                                imageVector = when (filtroActual) {
+                                    FiltroTipoRegistro.MOOD -> Icons.Default.CloudQueue
+                                    FiltroTipoRegistro.NEURO -> Icons.Default.Face
+                                    else -> Icons.Default.MenuBook
+                                },
                                 contentDescription = null,
                                 modifier = Modifier.size(64.dp),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
@@ -241,8 +250,11 @@ fun HistorialScreen(
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // La carta resume solo el ánimo: se oculta al filtrar DBT o sin registros de ánimo
-                        if (filtroActual != FiltroTipoRegistro.DBT && (conteos[FiltroTipoRegistro.MOOD] ?: 0) > 0) {
+                        // La carta resume solo el ánimo: aparece en «Todos» y «Ánimo», y solo si hay registros de ánimo
+                        val muestraCarta = (filtroActual == FiltroTipoRegistro.TODOS ||
+                                filtroActual == FiltroTipoRegistro.MOOD) &&
+                                (conteos[FiltroTipoRegistro.MOOD] ?: 0) > 0
+                        if (muestraCarta) {
                             item(key = "carta_animo") {
                                 CartaAnimoCard(
                                     puntos = cartaAnimo,

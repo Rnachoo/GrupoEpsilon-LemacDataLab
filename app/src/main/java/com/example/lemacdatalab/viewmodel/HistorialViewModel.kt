@@ -22,7 +22,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 // Enum para la barra superior
-enum class FiltroTipoRegistro { TODOS, MOOD, DBT }
+enum class FiltroTipoRegistro { TODOS, MOOD, DBT, NEURO }
 
 class HistorialViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -49,6 +49,7 @@ class HistorialViewModel(application: Application) : AndroidViewModel(applicatio
             FiltroTipoRegistro.TODOS -> lista
             FiltroTipoRegistro.MOOD -> lista.filter { it.tipoArea == "animo" }
             FiltroTipoRegistro.DBT -> lista.filter { it.tipoArea == "dbt" }
+            FiltroTipoRegistro.NEURO -> lista.filter { it.tipoArea == "neurodesarrollo" }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
@@ -57,7 +58,8 @@ class HistorialViewModel(application: Application) : AndroidViewModel(applicatio
         mapOf(
             FiltroTipoRegistro.TODOS to lista.size,
             FiltroTipoRegistro.MOOD to lista.count { it.tipoArea == "animo" },
-            FiltroTipoRegistro.DBT to lista.count { it.tipoArea == "dbt" }
+            FiltroTipoRegistro.DBT to lista.count { it.tipoArea == "dbt" },
+            FiltroTipoRegistro.NEURO to lista.count { it.tipoArea == "neurodesarrollo" }
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
