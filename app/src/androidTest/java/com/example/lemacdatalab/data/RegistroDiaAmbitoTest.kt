@@ -4,6 +4,7 @@ import androidx.room.Room
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.lemacdatalab.data.repository.RoomRegistroRepository
+import com.example.lemacdatalab.model.DatosAnimo
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -30,24 +31,33 @@ class RegistroDiaAmbitoTest {
         db.close()
     }
 
+    private fun animo(depresion: Int, contexto: String) = DatosAnimo(
+        depresion = depresion,
+        elevacion = 0,
+        horasSueno = null,
+        altoRiesgo = false,
+        sintomasPsicoticos = false,
+        contexto = contexto
+    )
+
     @Test
     fun segundoGuardadoDelMismoDia_actualizaYDejaLaVersionAnterior() = runBlocking {
-        repository.guardarMood(1, 3, "Trabajo", null)
-        repository.guardarMood(1, 5, "Casa", "nota")
+        repository.guardarMood(1, animo(2, "Trabajo"), null)
+        repository.guardarMood(1, animo(4, "Casa"), "nota")
 
         val historial = repository.observarHistorial(1).first()
         assertEquals(1, historial.size)
-        assertEquals(5, historial[0].nivelIntensidad)
+        assertEquals(4, historial[0].nivelIntensidad)
         assertEquals(1, db.registroDetalleDao().contarVersiones(historial[0].idRegistro))
     }
 
     @Test
     fun registroEliminado_seReutilizaAlGuardarDeNuevo() = runBlocking {
-        repository.guardarMood(1, 3, "Trabajo", null)
+        repository.guardarMood(1, animo(2, "Trabajo"), null)
         val idOriginal = repository.observarHistorial(1).first()[0].idRegistro
         repository.eliminar(1, idOriginal)
 
-        repository.guardarMood(1, 2, "Casa", null)
+        repository.guardarMood(1, animo(1, "Casa"), null)
 
         val historial = repository.observarHistorial(1).first()
         assertEquals(1, historial.size)
