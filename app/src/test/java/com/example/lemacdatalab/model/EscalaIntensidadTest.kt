@@ -36,7 +36,7 @@ EscalaIntensidadTest {
     @Test
     fun horasSueno_bordes0y24_sonValidos_25yNegativoNo() {
         assertTrue(esHorasSuenoValido(0))
-        assertTrue(esHorasSuenoValido(24))
+        assertEquals(true, esHorasSuenoValido(24))
         assertFalse(esHorasSuenoValido(25))
         assertFalse(esHorasSuenoValido(-1))
     }

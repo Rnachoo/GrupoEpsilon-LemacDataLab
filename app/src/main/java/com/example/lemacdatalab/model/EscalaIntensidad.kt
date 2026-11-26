@@ -13,7 +13,8 @@ fun etiquetaEscala(valor: Int): String? =
 
 const val HORAS_SUENO_MAX = 24
 
-fun esHorasSuenoValido(horas: Int?): Boolean = horas == null || horas in 0..HORAS_SUENO_MAX
+fun esHorasSuenoValido(horas: Int?): Boolean =
+    horas == null || (horas >= 0 && horas < HORAS_SUENO_MAX)
 
 fun nivelResumenAnimo(depresion: Int, elevacion: Int): Int = maxOf(depresion, elevacion)
 
