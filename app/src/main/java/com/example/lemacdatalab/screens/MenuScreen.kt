@@ -46,6 +46,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.lemacdatalab.components.ContenidoDiarioCard
 import com.example.lemacdatalab.components.GraficoEvolucionAmbitoCard
@@ -86,13 +87,15 @@ fun MenuScreen(
     menuViewModel: MenuViewModel = viewModel(),
     historialViewModel: HistorialViewModel = viewModel()
 ) {
-    val contenidos by contenidoViewModel.contenidos.collectAsState()
-    val state by menuViewModel.uiState.collectAsState()
-    val registrosEvolucion by historialViewModel.registros.collectAsState()
-    val filtroActual by historialViewModel.filtroActual.collectAsState()
-    val conteos by historialViewModel.conteos.collectAsState()
-    val seriesPorAmbito by historialViewModel.seriesPorAmbito.collectAsState()
-    val diasCarta by historialViewModel.diasCarta.collectAsState()
+    val contenidos by contenidoViewModel.contenidos.collectAsStateWithLifecycle()
+    val state by menuViewModel.uiState.collectAsStateWithLifecycle()
+    val registrosEvolucion by historialViewModel.registros.collectAsStateWithLifecycle()
+    val filtroActual by historialViewModel.filtroActual.collectAsStateWithLifecycle()
+    val conteos by historialViewModel.conteos.collectAsStateWithLifecycle()
+    val seriesPorAmbito by historialViewModel.seriesPorAmbito.collectAsStateWithLifecycle()
+    val diasCarta by historialViewModel.diasCarta.collectAsStateWithLifecycle()
+    val estadoSync by historialViewModel.estadoSyncUi.collectAsStateWithLifecycle()
+    val pendientesSync by historialViewModel.pendientesSync.collectAsStateWithLifecycle()
 
     val lecturaDiaria = contenidos.firstOrNull()
     var lecturaAbierta by remember { mutableStateOf(false) }
@@ -184,6 +187,14 @@ fun MenuScreen(
                                 alNavegarDBT = alNavegarDBT,
                                 alNavegarNeurodesarrollo = alNavegarNeurodesarrollo,
                                 alNavegarAdicciones = alNavegarAdicciones
+                            )
+                        }
+
+                        item(key = "estado_sync_menu") {
+                            TarjetaEstadoSincronizacion(
+                                estadoSync = estadoSync,
+                                pendientes = pendientesSync,
+                                onSincronizar = { historialViewModel.sincronizar() }
                             )
                         }
 

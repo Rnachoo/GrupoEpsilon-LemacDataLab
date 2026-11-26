@@ -27,12 +27,15 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Circle
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.CloudQueue
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.outlined.Spa
 import androidx.compose.material.icons.outlined.WorkOutline
 import androidx.compose.material3.AlertDialog
@@ -53,7 +56,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -66,13 +68,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.lemacdatalab.components.GraficoEvolucionAmbitoCard
 import com.example.lemacdatalab.model.AMBITOS_EVOLUCION
 import com.example.lemacdatalab.model.ESCALA_MAX
 import com.example.lemacdatalab.model.PERIODOS_CARTA_ANIMO
 import com.example.lemacdatalab.model.RegistroHistorial
-import com.example.lemacdatalab.model.SerieEvolucionAmbito
+import com.example.lemacdatalab.viewmodel.EstadoSyncUi
 import com.example.lemacdatalab.viewmodel.FiltroTipoRegistro
 import com.example.lemacdatalab.viewmodel.HistorialViewModel
 
@@ -95,11 +98,13 @@ fun HistorialScreen(
     onEditar: (RegistroHistorial) -> Unit,
     viewModel: HistorialViewModel = viewModel()
 ) {
-    val registros by viewModel.registros.collectAsState()
-    val filtroActual by viewModel.filtroActual.collectAsState()
-    val conteos by viewModel.conteos.collectAsState()
-    val seriesPorAmbito by viewModel.seriesPorAmbito.collectAsState()
-    val diasCarta by viewModel.diasCarta.collectAsState()
+    val registros by viewModel.registros.collectAsStateWithLifecycle()
+    val filtroActual by viewModel.filtroActual.collectAsStateWithLifecycle()
+    val conteos by viewModel.conteos.collectAsStateWithLifecycle()
+    val seriesPorAmbito by viewModel.seriesPorAmbito.collectAsStateWithLifecycle()
+    val diasCarta by viewModel.diasCarta.collectAsStateWithLifecycle()
+    val estadoSync by viewModel.estadoSyncUi.collectAsStateWithLifecycle()
+    val pendientesSync by viewModel.pendientesSync.collectAsStateWithLifecycle()
 
     var registroAEliminar by remember { mutableStateOf<RegistroHistorial?>(null) }
 
@@ -163,6 +168,14 @@ fun HistorialScreen(
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
+                        item(key = "estado_sync") {
+                            TarjetaEstadoSincronizacion(
+                                estadoSync = estadoSync,
+                                pendientes = pendientesSync,
+                                onSincronizar = { viewModel.sincronizar() }
+                            )
+                        }
+
                         item(key = "selector_periodo") {
                             SelectorPeriodoEvolucion(
                                 diasSeleccionados = diasCarta,
@@ -210,6 +223,104 @@ fun areasParaFiltro(filtro: FiltroTipoRegistro): List<String> = when (filtro) {
     FiltroTipoRegistro.NEURO -> listOf("neurodesarrollo")
     FiltroTipoRegistro.ADICCIONES -> listOf("adicciones")
 }
+
+@Composable
+fun TarjetaEstadoSincronizacion(
+    estadoSync: EstadoSyncUi,
+    pendientes: Int,
+    onSincronizar: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val (colorFondo, colorBorde, colorAcento, textoPrincipal) = when (estadoSync) {
+        EstadoSyncUi.Sincronizando -> QuadEstadoSync(
+            fondo = Color(0xFFF2F5F3),
+            borde = BordeSuave,
+            acento = VerdePrincipal,
+            texto = "Sincronizando con el servidor..."
+        )
+        is EstadoSyncUi.Sincronizado -> QuadEstadoSync(
+            fondo = if (pendientes > 0) Color(0xFFFDF6EC) else Color(0xFFE8F3EC),
+            borde = if (pendientes > 0) Color(0xFFE0C49F) else Color(0xFFC5DFCE),
+            acento = if (pendientes > 0) ColorMood else VerdePrincipal,
+            texto = if (pendientes > 0) {
+                "$pendientes pendiente(s) por sincronizar"
+            } else {
+                "Sincronizado · 0 pendientes"
+            }
+        )
+        is EstadoSyncUi.SinConexion -> QuadEstadoSync(
+            fondo = Color(0xFFFDF6EC),
+            borde = Color(0xFFE0C49F),
+            acento = Color(0xFFC85A32),
+            texto = "Modo sin conexión · $pendientes pendiente(s) en cola"
+        )
+    }
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = colorFondo),
+        border = BorderStroke(1.dp, colorBorde)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                when (estadoSync) {
+                    EstadoSyncUi.Sincronizando -> CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp,
+                        color = colorAcento
+                    )
+                    is EstadoSyncUi.Sincronizado -> Icon(
+                        imageVector = if (pendientes > 0) Icons.Default.Sync else Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = colorAcento,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    is EstadoSyncUi.SinConexion -> Icon(
+                        imageVector = Icons.Default.CloudOff,
+                        contentDescription = null,
+                        tint = colorAcento,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = textoPrincipal,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            TextButton(
+                onClick = onSincronizar,
+                enabled = estadoSync != EstadoSyncUi.Sincronizando
+            ) {
+                Text(
+                    text = if (estadoSync is EstadoSyncUi.SinConexion) "Reintentar" else "Sincronizar",
+                    fontWeight = FontWeight.Bold,
+                    color = colorAcento
+                )
+            }
+        }
+    }
+}
+
+private data class QuadEstadoSync(
+    val fondo: Color,
+    val borde: Color,
+    val acento: Color,
+    val texto: String
+)
 
 @Composable
 fun SelectorPeriodoEvolucion(
