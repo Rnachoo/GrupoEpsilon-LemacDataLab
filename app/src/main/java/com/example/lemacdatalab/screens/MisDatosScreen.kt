@@ -137,7 +137,7 @@ fun MisDatosScreen(
 
             AccionDatosCard(
                 titulo = "Exportar mis datos",
-                descripcion = "Comparte tus registros en formato CSV.",
+                descripcion = "Comparte tus registros de los 4 ámbitos (escala 0 a 4) en formato CSV.",
                 icono = Icons.Default.Share,
                 color = VerdePrincipal,
                 habilitado = total > 0,
