@@ -22,6 +22,7 @@ import com.example.lemacdatalab.screens.MenuScreen
 import com.example.lemacdatalab.screens.MoodScreen
 import com.example.lemacdatalab.screens.NeuroScreen
 import com.example.lemacdatalab.screens.ProximamenteScreen
+import com.example.lemacdatalab.screens.SplashScreen
 
 private fun NavHostController.volverSeguro() {
     val actual = currentBackStackEntry ?: return
@@ -37,8 +38,18 @@ private fun NavHostController.volverSeguro() {
 fun NavGraph(navController: NavHostController) {
     NavHost(
         navController = navController,
-        startDestination = "login"
+        startDestination = "splash"
     ) {
+        composable("splash") {
+            SplashScreen(
+                onFinalizar = {
+                    navController.navigate("login") {
+                        popUpTo("splash") { inclusive = true }
+                    }
+                }
+            )
+        }
+
         composable("login") {
             LoginScreen(
                 onIngresoExitoso = { rol ->

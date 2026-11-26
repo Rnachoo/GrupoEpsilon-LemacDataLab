@@ -4,16 +4,27 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- Halo cálido de contención -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M54,26L78,34.5L78,56C78,70.5 67.5,80.5 54,85C40.5,80.5 30,70.5 30,56L30,34.5Z"
+        android:strokeColor="#FBBF24"
+        android:strokeLineJoin="round"
+        android:strokeWidth="2.2" />
     <!-- Escudo blanco: privacidad desde el diseño -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M54,31L74,38L74,56C74,68 65,76 54,80C43,76 34,68 34,56L34,38Z" />
-    <!-- Línea de pulso: autorregistro / estado de ánimo -->
+        android:pathData="M54,30L74,37.2L74,55.5C74,67.8 65.2,76.2 54,80.4C42.8,76.2 34,67.8 34,55.5L34,37.2Z" />
+    <!-- Onda de evolución bipolar (elevación / calma) -->
     <path
         android:fillColor="#00000000"
-        android:pathData="M40,56L47,56L51,46L57,66L61,56L68,56"
+        android:pathData="M40,56L46,56L50.5,45.5L57.5,65.5L62,56L68,56"
         android:strokeColor="#2B4C3B"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
-        android:strokeWidth="3.2" />
+        android:strokeWidth="3.4" />
+    <!-- Punto de seguimiento diario -->
+    <path
+        android:fillColor="#D9822B"
+        android:pathData="M54,37.5m-2.8,0a2.8,2.8 0,1 1,5.6 0a2.8,2.8 0,1 1,-5.6 0" />
 </vector>
