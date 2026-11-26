@@ -10,17 +10,18 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -47,6 +48,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.lemacdatalab.components.ContenidoDiarioCard
+import com.example.lemacdatalab.components.GraficoEvolucionAmbitoCard
 import com.example.lemacdatalab.components.LecturaModalDialog
 import com.example.lemacdatalab.components.TarjetaLineaEmergencia
 import com.example.lemacdatalab.data.SesionUsuario
@@ -57,6 +59,8 @@ import com.example.lemacdatalab.native.compartirLecturaDiaria
 import com.example.lemacdatalab.native.marcarNumeroEmergencia
 import com.example.lemacdatalab.ui.theme.*
 import com.example.lemacdatalab.viewmodel.ContenidoViewModel
+import com.example.lemacdatalab.viewmodel.FiltroTipoRegistro
+import com.example.lemacdatalab.viewmodel.HistorialViewModel
 import com.example.lemacdatalab.viewmodel.MenuViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -65,41 +69,47 @@ import kotlinx.coroutines.launch
 
 private val AmbarCalido = Color(0xFFFBBF24)
 
-// pantalla principal del menu
+// Pantalla inicial: «Mi evolución» + acceso a «Registro de hoy», los 4 módulos y «Mi espacio»
 @Composable
 fun MenuScreen(
-    //lee dinamicamente el ID del usuario que inicio sesion en SesionUsuario
     idUsuario: String = SesionUsuario.usuarioActual?.identificadorSintetico ?: "AX-7B99",
     alNavegarNeurodesarrollo: () -> Unit = {},
     alNavegarDBT: () -> Unit = {},
     alNavegarAnimo: () -> Unit = {},
     alNavegarAdicciones: () -> Unit = {},
+    alNavegarRegistroHoy: () -> Unit = {},
     alNavegarHistorial: () -> Unit = {},
     alNavegarMisDatos: () -> Unit = {},
+    alEditarRegistro: (RegistroHistorial) -> Unit = {},
     alCerrarSesion: () -> Unit = {},
     contenidoViewModel: ContenidoViewModel = viewModel(factory = ContenidoViewModel.Factory),
-    menuViewModel: MenuViewModel = viewModel()
+    menuViewModel: MenuViewModel = viewModel(),
+    historialViewModel: HistorialViewModel = viewModel()
 ) {
     val contenidos by contenidoViewModel.contenidos.collectAsState()
     val state by menuViewModel.uiState.collectAsState()
-    // la consulta deja primero la lectura marcada; si no hay ninguna, queda la mas reciente
+    val registrosEvolucion by historialViewModel.registros.collectAsState()
+    val filtroActual by historialViewModel.filtroActual.collectAsState()
+    val conteos by historialViewModel.conteos.collectAsState()
+    val seriesPorAmbito by historialViewModel.seriesPorAmbito.collectAsState()
+    val diasCarta by historialViewModel.diasCarta.collectAsState()
+
     val lecturaDiaria = contenidos.firstOrNull()
     var lecturaAbierta by remember { mutableStateOf(false) }
     var guiaAbierta by remember { mutableStateOf(false) }
     var ayudaAbierta by remember { mutableStateOf(false) }
     var bandejaAbierta by remember { mutableStateOf(false) }
+    var registroAEliminar by remember { mutableStateOf<RegistroHistorial?>(null) }
     var permisoSolicitado by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
-    // dos secciones deslizables: Registrar y Mi espacio
-    val pagerState = rememberPagerState(pageCount = { 2 })
+    // Tres pestañas con «Mi evolución» como vista inicial
+    val pagerState = rememberPagerState(pageCount = { 3 })
     val scope = rememberCoroutineScope()
 
-    // si el permiso se rechaza, los avisos igual quedan en la bandeja de la campana
     val permisoNotificaciones = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { }
 
-    // se pide después de cerrar la guía de bienvenida, una vez por visita al menú
     LaunchedEffect(state.onboardingVisto, guiaAbierta) {
         if (state.onboardingVisto && !guiaAbierta && !permisoSolicitado &&
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
@@ -109,6 +119,17 @@ fun MenuScreen(
             permisoSolicitado = true
             permisoNotificaciones.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
+    }
+
+    registroAEliminar?.let { registro ->
+        DialogoConfirmarEliminar(
+            registro = registro,
+            onConfirmar = {
+                historialViewModel.eliminar(registro.idRegistro)
+                registroAEliminar = null
+            },
+            onCancelar = { registroAEliminar = null }
+        )
     }
 
     Column(
@@ -134,7 +155,7 @@ fun MenuScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         PestanasMenu(
-            titulos = listOf("Registrar", "Mi espacio"),
+            titulos = listOf("Mi evolución", "Módulos", "Mi espacio"),
             seleccionada = pagerState.currentPage,
             alSeleccionar = { scope.launch { pagerState.animateScrollToPage(it) } }
         )
@@ -145,88 +166,190 @@ fun MenuScreen(
                 .weight(1f)
                 .fillMaxWidth()
         ) { pagina ->
-            if (pagina == 0) {
-                // Sección 1: los cuatro módulos de registro
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    item {
-                        EncabezadoSeccion(
-                            titulo = "Módulos de Autorregistro",
-                            subtitulo = "Selecciona el área que deseas registrar hoy."
-                        )
-                    }
-                    item {
-                        TarjetaModulo(
-                            titulo = "Neurodesarrollo",
-                            subtitulo = "Rutinas y autorregulación",
-                            icono = Icons.Default.Face,
-                            alHacerClic = alNavegarNeurodesarrollo
-                        )
-                    }
-                    item {
-                        TarjetaModulo(
-                            titulo = "Diario DBT",
-                            subtitulo = "Habilidades y emociones",
-                            icono = Icons.Default.MenuBook,
-                            alHacerClic = alNavegarDBT
-                        )
-                    }
-                    item {
-                        TarjetaModulo(
-                            titulo = "Estado de Ánimo",
-                            subtitulo = "Escala y contexto",
-                            icono = Icons.Default.CloudQueue,
-                            alHacerClic = alNavegarAnimo
-                        )
-                    }
-                    item {
-                        TarjetaModulo(
-                            titulo = "Adicciones",
-                            subtitulo = "Impulsos y metas",
-                            icono = Icons.Default.LocalFireDepartment,
-                            alHacerClic = alNavegarAdicciones
-                        )
+            when (pagina) {
+                0 -> {
+                    // Pantalla inicial «Mi evolución»
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 24.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        item(key = "registro_hoy_cta") {
+                            TarjetaRegistroHoy(alHacerClic = alNavegarRegistroHoy)
+                        }
+
+                        item(key = "accesos_modulos") {
+                            AccesosRapidosModulos(
+                                alNavegarAnimo = alNavegarAnimo,
+                                alNavegarDBT = alNavegarDBT,
+                                alNavegarNeurodesarrollo = alNavegarNeurodesarrollo,
+                                alNavegarAdicciones = alNavegarAdicciones
+                            )
+                        }
+
+                        item(key = "titulo_evolucion") {
+                            EncabezadoSeccion(
+                                titulo = "Mi evolución",
+                                subtitulo = "Gráficos por ámbito (7 y 30 días) y registros por fecha."
+                            )
+                        }
+
+                        item(key = "selector_periodo_menu") {
+                            SelectorPeriodoEvolucion(
+                                diasSeleccionados = diasCarta,
+                                onCambiarDias = { historialViewModel.setDiasCarta(it) }
+                            )
+                        }
+
+                        item(key = "filtros_ambito_menu") {
+                            BarraFiltrosAmbito(
+                                filtroActual = filtroActual,
+                                conteos = conteos,
+                                onSeleccionar = { historialViewModel.setFiltro(it) },
+                                modifier = Modifier.padding(horizontal = 0.dp)
+                            )
+                        }
+
+                        val areasVisibles = areasParaFiltro(filtroActual)
+                        items(areasVisibles, key = { "evolucion_grafico_$it" }) { area ->
+                            seriesPorAmbito[area]?.let { serie ->
+                                GraficoEvolucionAmbitoCard(
+                                    serie = serie,
+                                    mostrarSelectorDias = false
+                                )
+                            }
+                        }
+
+                        item(key = "titulo_listado") {
+                            Text(
+                                text = "Registros por fecha",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TextoPrincipal,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
+
+                        when (val lista = registrosEvolucion) {
+                            null -> item(key = "cargando_evolucion") {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(24.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator()
+                                }
+                            }
+
+                            else -> if (lista.isEmpty()) {
+                                item(key = "vacio_evolucion") {
+                                    EstadoVacioHistorial(
+                                        filtroActual = filtroActual,
+                                        onLimpiarFiltro = { historialViewModel.setFiltro(FiltroTipoRegistro.TODOS) }
+                                    )
+                                }
+                            } else {
+                                items(lista, key = { "registro_menu_${it.idRegistro}" }) { registro ->
+                                    TarjetaRegistro(
+                                        registro = registro,
+                                        onEditar = { alEditarRegistro(registro) },
+                                        onEliminar = { registroAEliminar = registro }
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
-            } else {
-                // Sección 2: lectura del día, ayuda y control de los datos
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    item {
-                        EncabezadoSeccion(
-                            titulo = "Mi espacio",
-                            subtitulo = "Tu lectura del día, la ayuda y el control de tus datos."
-                        )
-                    }
-                    if (lecturaDiaria != null) {
+
+                1 -> {
+                    // Sección Módulos: Registro de hoy + los cuatro módulos individuales
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 24.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
                         item {
-                            ContenidoDiarioCard(
-                                contenido = lecturaDiaria,
-                                onClick = { lecturaAbierta = true }
+                            EncabezadoSeccion(
+                                titulo = "Módulos de Autorregistro",
+                                subtitulo = "Usa «Registro de hoy» o selecciona un área específica."
+                            )
+                        }
+                        item {
+                            TarjetaRegistroHoy(alHacerClic = alNavegarRegistroHoy)
+                        }
+                        item {
+                            TarjetaModulo(
+                                titulo = "Neurodesarrollo",
+                                subtitulo = "Rutinas y autorregulación",
+                                icono = Icons.Default.Face,
+                                alHacerClic = alNavegarNeurodesarrollo
+                            )
+                        }
+                        item {
+                            TarjetaModulo(
+                                titulo = "Diario DBT",
+                                subtitulo = "Habilidades y emociones",
+                                icono = Icons.AutoMirrored.Filled.MenuBook,
+                                alHacerClic = alNavegarDBT
+                            )
+                        }
+                        item {
+                            TarjetaModulo(
+                                titulo = "Estado de Ánimo",
+                                subtitulo = "Escala y contexto",
+                                icono = Icons.Default.CloudQueue,
+                                alHacerClic = alNavegarAnimo
+                            )
+                        }
+                        item {
+                            TarjetaModulo(
+                                titulo = "Adicciones",
+                                subtitulo = "Impulsos y metas",
+                                icono = Icons.Default.LocalFireDepartment,
+                                alHacerClic = alNavegarAdicciones
                             )
                         }
                     }
-                    item {
-                        TarjetaModulo(
-                            titulo = "Ayuda y Emergencias",
-                            subtitulo = "Línea *4141 · Salud Responde · SAMU",
-                            icono = Icons.Default.PhoneInTalk,
-                            alHacerClic = { ayudaAbierta = true }
-                        )
-                    }
-                    item {
-                        TarjetaModulo(
-                            titulo = "Mis datos",
-                            subtitulo = "Exportar o eliminar mis registros",
-                            icono = Icons.Default.Lock,
-                            alHacerClic = alNavegarMisDatos
-                        )
+                }
+
+                else -> {
+                    // Sección Mi espacio: lectura del día, ayuda y control de los datos
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 24.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        item {
+                            EncabezadoSeccion(
+                                titulo = "Mi espacio",
+                                subtitulo = "Tu lectura del día, la ayuda y el control de tus datos."
+                            )
+                        }
+                        if (lecturaDiaria != null) {
+                            item {
+                                ContenidoDiarioCard(
+                                    contenido = lecturaDiaria,
+                                    onClick = { lecturaAbierta = true }
+                                )
+                            }
+                        }
+                        item {
+                            TarjetaModulo(
+                                titulo = "Ayuda y Emergencias",
+                                subtitulo = "Línea *4141 · Salud Responde · SAMU",
+                                icono = Icons.Default.PhoneInTalk,
+                                alHacerClic = { ayudaAbierta = true }
+                            )
+                        }
+                        item {
+                            TarjetaModulo(
+                                titulo = "Mis datos",
+                                subtitulo = "Exportar o eliminar mis registros",
+                                icono = Icons.Default.Lock,
+                                alHacerClic = alNavegarMisDatos
+                            )
+                        }
                     }
                 }
             }
@@ -259,6 +382,136 @@ fun MenuScreen(
     }
 }
 
+@Composable
+private fun TarjetaRegistroHoy(alHacerClic: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { alHacerClic() },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = VerdePrincipal),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(18.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.DateRange,
+                    contentDescription = "Registro de hoy",
+                    tint = VerdePrincipal,
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(SuperficieBlanca)
+                        .padding(10.dp)
+                )
+                Spacer(modifier = Modifier.width(14.dp))
+                Column {
+                    Text(
+                        text = "Registro de hoy",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = SuperficieBlanca
+                    )
+                    Text(
+                        text = "Completa los 4 ámbitos del día (puedes omitir cualquiera)",
+                        fontSize = 12.sp,
+                        color = SuperficieBlanca.copy(alpha = 0.85f)
+                    )
+                }
+            }
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = "Ir a Registro de hoy",
+                tint = SuperficieBlanca
+            )
+        }
+    }
+}
+
+@Composable
+private fun AccesosRapidosModulos(
+    alNavegarAnimo: () -> Unit,
+    alNavegarDBT: () -> Unit,
+    alNavegarNeurodesarrollo: () -> Unit,
+    alNavegarAdicciones: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        AccesoModuloCompacto(
+            titulo = "Ánimo",
+            icono = Icons.Default.CloudQueue,
+            onClick = alNavegarAnimo,
+            modifier = Modifier.weight(1f)
+        )
+        AccesoModuloCompacto(
+            titulo = "DBT",
+            icono = Icons.AutoMirrored.Filled.MenuBook,
+            onClick = alNavegarDBT,
+            modifier = Modifier.weight(1f)
+        )
+        AccesoModuloCompacto(
+            titulo = "Neuro",
+            icono = Icons.Default.Face,
+            onClick = alNavegarNeurodesarrollo,
+            modifier = Modifier.weight(1f)
+        )
+        AccesoModuloCompacto(
+            titulo = "Adicciones",
+            icono = Icons.Default.LocalFireDepartment,
+            onClick = alNavegarAdicciones,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun AccesoModuloCompacto(
+    titulo: String,
+    icono: ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.clickable { onClick() },
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = SuperficieBlanca),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 10.dp, horizontal = 4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Icon(
+                imageVector = icono,
+                contentDescription = titulo,
+                tint = VerdePrincipal,
+                modifier = Modifier.size(20.dp)
+            )
+            Text(
+                text = titulo,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = TextoPrincipal,
+                maxLines = 1
+            )
+        }
+    }
+}
+
 // dibuja la parte superior curva con los datos del usuario
 @Composable
 fun EncabezadoMenu(
@@ -277,7 +530,7 @@ fun EncabezadoMenu(
             .fillMaxWidth()
             .clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))
             .background(VerdePrincipal)
-            .padding(horizontal = 24.dp, vertical = 32.dp)
+            .padding(horizontal = 24.dp, vertical = 28.dp)
     ) {
         Column {
             Row(
@@ -341,7 +594,7 @@ fun EncabezadoMenu(
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             Card(
                 shape = RoundedCornerShape(16.dp),
@@ -391,26 +644,24 @@ fun EncabezadoMenu(
     }
 }
 
-// título y bajada de cada sección del menú
 @Composable
 private fun EncabezadoSeccion(titulo: String, subtitulo: String) {
     Column {
         Text(
             text = titulo,
-            fontSize = 22.sp,
+            fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
             color = TextoPrincipal
         )
         Text(
             text = subtitulo,
-            fontSize = 14.sp,
+            fontSize = 13.sp,
             color = TextoSecundario,
-            modifier = Modifier.padding(top = 4.dp)
+            modifier = Modifier.padding(top = 2.dp)
         )
     }
 }
 
-// pestañas del menú: se tocan o se cambian deslizando, como en la Play Store
 @Composable
 private fun PestanasMenu(
     titulos: List<String>,
@@ -418,7 +669,7 @@ private fun PestanasMenu(
     alSeleccionar: (Int) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp)) {
+        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
             titulos.forEachIndexed { indice, titulo ->
                 val activa = indice == seleccionada
                 Column(
@@ -433,7 +684,7 @@ private fun PestanasMenu(
                 ) {
                     Text(
                         text = titulo,
-                        fontSize = 16.sp,
+                        fontSize = 14.sp,
                         fontWeight = if (activa) FontWeight.Bold else FontWeight.Medium,
                         color = if (activa) VerdePrincipal else TextoSecundario,
                         modifier = Modifier.padding(vertical = 12.dp)
@@ -452,7 +703,6 @@ private fun PestanasMenu(
     }
 }
 
-// unifica las tarjetas del menu
 @Composable
 fun TarjetaModulo(
     titulo: String,
@@ -501,7 +751,6 @@ fun TarjetaModulo(
     }
 }
 
-// boton de guia: salta y brilla hasta que el usuario abre la guia por primera vez
 @Composable
 private fun BotonGuia(animado: Boolean, alHacerClic: () -> Unit) {
     var desplazamiento = 0f
@@ -560,7 +809,6 @@ private fun BotonGuia(animado: Boolean, alHacerClic: () -> Unit) {
     }
 }
 
-// boton permanente de ayuda y emergencia con marcación rápida
 @Composable
 private fun BotonAccesoAyuda(alHacerClic: () -> Unit) {
     Icon(
@@ -587,9 +835,9 @@ private fun GuiaBienvenidaDialog(onCerrar: () -> Unit) {
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                PasoGuia(numero = 1, titulo = "Elige un módulo", detalle = "Registra tu ánimo o habilidad.")
-                PasoGuia(numero = 2, titulo = "Evalúa sin juicios", detalle = "Usa la escala del 1 al 10.")
-                PasoGuia(numero = 3, titulo = "Mira tu avance", detalle = "Filtra tu historial cuando quieras.")
+                PasoGuia(numero = 1, titulo = "Elige un módulo o «Registro de hoy»", detalle = "Registra tus 4 ámbitos del día.")
+                PasoGuia(numero = 2, titulo = "Evalúa sin juicios", detalle = "Usa la escala común de 0 a 4.")
+                PasoGuia(numero = 3, titulo = "Mira tu evolución", detalle = "Filtra gráficos y registros por los 4 ámbitos.")
                 PasoGuia(numero = 4, titulo = "Desliza el menú", detalle = "En «Mi espacio» están la lectura del día, la ayuda y tus datos.")
             }
         },
@@ -601,7 +849,6 @@ private fun GuiaBienvenidaDialog(onCerrar: () -> Unit) {
     )
 }
 
-// Dialogo interactivo de ayuda con los numeros de emergencia y marcado nativo
 @Composable
 private fun AyudaEmergenciaDialog(onCerrar: () -> Unit) {
     val context = LocalContext.current
@@ -676,7 +923,6 @@ private fun PasoGuia(numero: Int, titulo: String, detalle: String) {
     }
 }
 
-// ultimos registros del usuario y un mensaje de animo segun su racha
 @Composable
 private fun BandejaAlertasDialog(
     eventos: List<RegistroHistorial>,
@@ -740,7 +986,6 @@ private fun BandejaAlertasDialog(
     )
 }
 
-// "2026-10-30 13:37:00" -> "Hoy 13:37" o "29/10 13:37"
 private fun formatearEvento(fechaHora: String): String {
     val hoy = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
     val fecha = fechaHora.take(10)

@@ -1,6 +1,7 @@
 package com.example.lemacdatalab.navigation
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.Lifecycle
@@ -70,8 +71,17 @@ fun NavGraph(navController: NavHostController) {
                 alNavegarDBT = { navController.navigate("dbt") },
                 alNavegarAnimo = { navController.navigate("animo") },
                 alNavegarAdicciones = { navController.navigate("adicciones") },
+                alNavegarRegistroHoy = { navController.navigate("registro_hoy") },
                 alNavegarHistorial = { navController.navigate("historial") },
                 alNavegarMisDatos = { navController.navigate("misdatos") },
+                alEditarRegistro = { registro ->
+                    when (registro.tipoArea) {
+                        "animo" -> navController.navigate("animo?idRegistro=${registro.idRegistro}")
+                        "dbt" -> navController.navigate("dbt?idRegistro=${registro.idRegistro}")
+                        "neurodesarrollo" -> navController.navigate("neurodesarrollo?idRegistro=${registro.idRegistro}")
+                        "adicciones" -> navController.navigate("adicciones")
+                    }
+                },
                 alCerrarSesion = {
                     SesionUsuario.cerrar()
                     navController.navigate("login") {
@@ -131,6 +141,7 @@ fun NavGraph(navController: NavHostController) {
                         "animo" -> navController.navigate("animo?idRegistro=${registro.idRegistro}")
                         "dbt" -> navController.navigate("dbt?idRegistro=${registro.idRegistro}")
                         "neurodesarrollo" -> navController.navigate("neurodesarrollo?idRegistro=${registro.idRegistro}")
+                        "adicciones" -> navController.navigate("adicciones")
                     }
                 }
             )
@@ -160,6 +171,16 @@ fun NavGraph(navController: NavHostController) {
                 titulo = "Adicciones",
                 subtitulo = "Impulsos y metas",
                 icono = Icons.Default.LocalFireDepartment,
+                onBack = { navController.volverSeguro() }
+            )
+        }
+
+        // Flujo unificado pendiente de integración (Paquete E)
+        composable("registro_hoy") {
+            ProximamenteScreen(
+                titulo = "Registro de hoy",
+                subtitulo = "Los 4 ámbitos en un solo flujo",
+                icono = Icons.Default.DateRange,
                 onBack = { navController.volverSeguro() }
             )
         }

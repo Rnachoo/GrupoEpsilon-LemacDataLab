@@ -4,14 +4,16 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.lemacdatalab.data.AppDatabase
+import com.example.lemacdatalab.data.SesionUsuario
 import com.example.lemacdatalab.data.repository.RegistroRepository
 import com.example.lemacdatalab.data.repository.RoomRegistroRepository
-import com.example.lemacdatalab.data.SesionUsuario
 import com.example.lemacdatalab.data.repository.UsuarioRepository
 import com.example.lemacdatalab.model.DIAS_CARTA_ANIMO
 import com.example.lemacdatalab.model.PuntoCarta
 import com.example.lemacdatalab.model.RegistroHistorial
+import com.example.lemacdatalab.model.SerieEvolucionAmbito
 import com.example.lemacdatalab.model.calcularCartaAnimo
+import com.example.lemacdatalab.model.calcularSeriesPorAmbito
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -21,8 +23,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-// Enum para la barra superior
-enum class FiltroTipoRegistro { TODOS, MOOD, DBT, NEURO }
+// Enum para filtro por los 4 ámbitos
+enum class FiltroTipoRegistro { TODOS, MOOD, DBT, NEURO, ADICCIONES }
 
 class HistorialViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -50,6 +52,7 @@ class HistorialViewModel(application: Application) : AndroidViewModel(applicatio
             FiltroTipoRegistro.MOOD -> lista.filter { it.tipoArea == "animo" }
             FiltroTipoRegistro.DBT -> lista.filter { it.tipoArea == "dbt" }
             FiltroTipoRegistro.NEURO -> lista.filter { it.tipoArea == "neurodesarrollo" }
+            FiltroTipoRegistro.ADICCIONES -> lista.filter { it.tipoArea == "adicciones" }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
@@ -59,15 +62,16 @@ class HistorialViewModel(application: Application) : AndroidViewModel(applicatio
             FiltroTipoRegistro.TODOS to lista.size,
             FiltroTipoRegistro.MOOD to lista.count { it.tipoArea == "animo" },
             FiltroTipoRegistro.DBT to lista.count { it.tipoArea == "dbt" },
-            FiltroTipoRegistro.NEURO to lista.count { it.tipoArea == "neurodesarrollo" }
+            FiltroTipoRegistro.NEURO to lista.count { it.tipoArea == "neurodesarrollo" },
+            FiltroTipoRegistro.ADICCIONES to lista.count { it.tipoArea == "adicciones" }
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
-    // Período seleccionado para la carta del ánimo (7 o 30 días)
+    // Período seleccionado para los gráficos (7 o 30 días)
     private val _diasCarta = MutableStateFlow(DIAS_CARTA_ANIMO)
     val diasCarta: StateFlow<Int> = _diasCarta.asStateFlow()
 
-    // Carta del ánimo: promedio diario según el período seleccionado (7 o 30 días)
+    // Carta del ánimo (compatibilidad)
     val cartaAnimo: StateFlow<List<PuntoCarta>> = combine(
         _registrosDb,
         _diasCarta
@@ -75,12 +79,18 @@ class HistorialViewModel(application: Application) : AndroidViewModel(applicatio
         calcularCartaAnimo(lista, dias = dias)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    // Función para cambiar el filtro
+    // Series por cada uno de los 4 ámbitos para 7 o 30 días
+    val seriesPorAmbito: StateFlow<Map<String, SerieEvolucionAmbito>> = combine(
+        _registrosDb,
+        _diasCarta
+    ) { lista, dias ->
+        calcularSeriesPorAmbito(lista, dias = dias)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+
     fun setFiltro(filtro: FiltroTipoRegistro) {
         _filtroActual.value = filtro
     }
 
-    // Función para cambiar el período de la carta del ánimo
     fun setDiasCarta(dias: Int) {
         _diasCarta.value = dias
     }

@@ -24,14 +24,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.CloudQueue
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Face
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.outlined.Spa
 import androidx.compose.material.icons.outlined.WorkOutline
 import androidx.compose.material3.AlertDialog
@@ -66,9 +67,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.lemacdatalab.components.CartaAnimoCard
+import com.example.lemacdatalab.components.GraficoEvolucionAmbitoCard
+import com.example.lemacdatalab.model.AMBITOS_EVOLUCION
 import com.example.lemacdatalab.model.ESCALA_MAX
+import com.example.lemacdatalab.model.PERIODOS_CARTA_ANIMO
 import com.example.lemacdatalab.model.RegistroHistorial
+import com.example.lemacdatalab.model.SerieEvolucionAmbito
 import com.example.lemacdatalab.viewmodel.FiltroTipoRegistro
 import com.example.lemacdatalab.viewmodel.HistorialViewModel
 
@@ -76,12 +80,13 @@ import com.example.lemacdatalab.viewmodel.HistorialViewModel
 private val ColorDbt = Color(0xFF8EAF9D) // Verde Salvia
 private val ColorMood = Color(0xFFD9822B) // Terracota Cálido
 private val ColorNeuro = Color(0xFF7B8FB5) // Azul grisáceo
+private val ColorAdicciones = Color(0xFFC85A32) // Terracota intenso
 private val ColorFondoNotas = Color(0xFFF8FAF9) // Fondo de lectura
 private val VerdePrincipal = Color(0xFF2B4C3B) // Para el chip seleccionado
 private val BordeSuave = Color(0xFFE4E4E0)
 
-// Ámbitos que se pueden editar desde el historial
-private val AREAS_EDITABLES = setOf("animo", "dbt", "neurodesarrollo")
+// Ámbitos que se pueden editar desde el historial / evolución
+private val AREAS_EDITABLES = setOf("animo", "dbt", "neurodesarrollo", "adicciones")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -93,44 +98,26 @@ fun HistorialScreen(
     val registros by viewModel.registros.collectAsState()
     val filtroActual by viewModel.filtroActual.collectAsState()
     val conteos by viewModel.conteos.collectAsState()
-    val cartaAnimo by viewModel.cartaAnimo.collectAsState()
+    val seriesPorAmbito by viewModel.seriesPorAmbito.collectAsState()
     val diasCarta by viewModel.diasCarta.collectAsState()
 
     var registroAEliminar by remember { mutableStateOf<RegistroHistorial?>(null) }
 
     registroAEliminar?.let { registro ->
-        AlertDialog(
-            onDismissRequest = { registroAEliminar = null },
-            title = { Text("Eliminar registro") },
-            text = {
-                Text(
-                    "Se eliminará el registro de ${tituloArea(registro.tipoArea)} del " +
-                            "${formatearFecha(registro.fechaHoraCreacion)}. " +
-                            "Esta acción no se puede deshacer."
-                )
+        DialogoConfirmarEliminar(
+            registro = registro,
+            onConfirmar = {
+                viewModel.eliminar(registro.idRegistro)
+                registroAEliminar = null
             },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.eliminar(registro.idRegistro)
-                        registroAEliminar = null
-                    }
-                ) {
-                    Text("Eliminar", color = MaterialTheme.colorScheme.error)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { registroAEliminar = null }) {
-                    Text("Cancelar")
-                }
-            }
+            onCancelar = { registroAEliminar = null }
         )
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Historial") },
+                title = { Text("Historial y evolución") },
                 navigationIcon = {
                     IconButton(
                         onClick = onBack,
@@ -156,52 +143,12 @@ fun HistorialScreen(
                 .padding(padding)
                 .fillMaxSize()
         ) {
-            // Barra de FilterChip: se desliza horizontalmente si no caben todos
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                FiltroTipoRegistro.entries.forEach { filtroEnum ->
-                    val estaActivo = filtroActual == filtroEnum
-                    val conteo = conteos[filtroEnum] ?: 0
-                    val titulo = when (filtroEnum) {
-                        FiltroTipoRegistro.TODOS -> "Todos"
-                        FiltroTipoRegistro.MOOD -> "Ánimo"
-                        FiltroTipoRegistro.DBT -> "DBT"
-                        FiltroTipoRegistro.NEURO -> "Neuro"
-                    }
-                    val icono = when (filtroEnum) {
-                        FiltroTipoRegistro.TODOS -> Icons.Default.List
-                        FiltroTipoRegistro.MOOD -> Icons.Default.CloudQueue
-                        FiltroTipoRegistro.DBT -> Icons.Default.MenuBook
-                        FiltroTipoRegistro.NEURO -> Icons.Default.Face
-                    }
+            BarraFiltrosAmbito(
+                filtroActual = filtroActual,
+                conteos = conteos,
+                onSeleccionar = { viewModel.setFiltro(it) }
+            )
 
-                    FilterChip(
-                        selected = estaActivo,
-                        onClick = { viewModel.setFiltro(filtroEnum) },
-                        label = { Text("$titulo ($conteo)") },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = if (estaActivo) Icons.Default.Check else icono,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = VerdePrincipal,
-                            selectedLabelColor = Color.White,
-                            selectedLeadingIconColor = Color.White
-                        ),
-                        shape = CircleShape
-                    )
-                }
-            }
-
-            //Contenido principal
             when (val lista = registros) {
                 null -> Box(
                     modifier = Modifier.fillMaxSize(),
@@ -210,65 +157,44 @@ fun HistorialScreen(
                     CircularProgressIndicator()
                 }
 
-                else -> if (lista.isEmpty()) {
-                    //Estado Vacío
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(32.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                imageVector = when (filtroActual) {
-                                    FiltroTipoRegistro.MOOD -> Icons.Default.CloudQueue
-                                    FiltroTipoRegistro.NEURO -> Icons.Default.Face
-                                    else -> Icons.Default.MenuBook
-                                },
-                                contentDescription = null,
-                                modifier = Modifier.size(64.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = "Aún no tienes registros en esta categoría. ¡Cada pequeño paso cuenta cuando decidas comenzar!",
-                                style = MaterialTheme.typography.bodyLarge,
-                                textAlign = TextAlign.Center,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.height(24.dp))
-                            if (filtroActual != FiltroTipoRegistro.TODOS) {
-                                OutlinedButton(onClick = { viewModel.setFiltro(FiltroTipoRegistro.TODOS) }) {
-                                    Text("Limpiar filtro")
-                                }
-                            }
-                        }
-                    }
-                } else {
+                else -> {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // La carta resume solo el ánimo: aparece en «Todos» y «Ánimo», y solo si hay registros de ánimo
-                        val muestraCarta = (filtroActual == FiltroTipoRegistro.TODOS ||
-                                filtroActual == FiltroTipoRegistro.MOOD) &&
-                                (conteos[FiltroTipoRegistro.MOOD] ?: 0) > 0
-                        if (muestraCarta) {
-                            item(key = "carta_animo") {
-                                CartaAnimoCard(
-                                    puntos = cartaAnimo,
-                                    dias = diasCarta,
-                                    onCambiarDias = { viewModel.setDiasCarta(it) }
+                        item(key = "selector_periodo") {
+                            SelectorPeriodoEvolucion(
+                                diasSeleccionados = diasCarta,
+                                onCambiarDias = { viewModel.setDiasCarta(it) }
+                            )
+                        }
+
+                        val areasVisibles = areasParaFiltro(filtroActual)
+                        items(areasVisibles, key = { "grafico_$it" }) { area ->
+                            seriesPorAmbito[area]?.let { serie ->
+                                GraficoEvolucionAmbitoCard(
+                                    serie = serie,
+                                    mostrarSelectorDias = false
                                 )
                             }
                         }
-                        items(lista, key = { it.idRegistro }) { registro ->
-                            TarjetaRegistro(
-                                registro = registro,
-                                onEditar = { onEditar(registro) },
-                                onEliminar = { registroAEliminar = registro }
-                            )
+
+                        if (lista.isEmpty()) {
+                            item(key = "estado_vacio") {
+                                EstadoVacioHistorial(
+                                    filtroActual = filtroActual,
+                                    onLimpiarFiltro = { viewModel.setFiltro(FiltroTipoRegistro.TODOS) }
+                                )
+                            }
+                        } else {
+                            items(lista, key = { it.idRegistro }) { registro ->
+                                TarjetaRegistro(
+                                    registro = registro,
+                                    onEditar = { onEditar(registro) },
+                                    onEliminar = { registroAEliminar = registro }
+                                )
+                            }
                         }
                     }
                 }
@@ -277,8 +203,173 @@ fun HistorialScreen(
     }
 }
 
+fun areasParaFiltro(filtro: FiltroTipoRegistro): List<String> = when (filtro) {
+    FiltroTipoRegistro.TODOS -> AMBITOS_EVOLUCION
+    FiltroTipoRegistro.MOOD -> listOf("animo")
+    FiltroTipoRegistro.DBT -> listOf("dbt")
+    FiltroTipoRegistro.NEURO -> listOf("neurodesarrollo")
+    FiltroTipoRegistro.ADICCIONES -> listOf("adicciones")
+}
+
 @Composable
-private fun TarjetaRegistro(
+fun SelectorPeriodoEvolucion(
+    diasSeleccionados: Int,
+    onCambiarDias: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "Período:",
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = VerdePrincipal
+        )
+        PERIODOS_CARTA_ANIMO.forEach { opcionDias ->
+            val seleccionado = diasSeleccionados == opcionDias
+            FilterChip(
+                selected = seleccionado,
+                onClick = { onCambiarDias(opcionDias) },
+                label = { Text("$opcionDias días") },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = VerdePrincipal,
+                    selectedLabelColor = Color.White
+                ),
+                shape = CircleShape
+            )
+        }
+    }
+}
+
+@Composable
+fun BarraFiltrosAmbito(
+    filtroActual: FiltroTipoRegistro,
+    conteos: Map<FiltroTipoRegistro, Int>,
+    onSeleccionar: (FiltroTipoRegistro) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        FiltroTipoRegistro.entries.forEach { filtroEnum ->
+            val estaActivo = filtroActual == filtroEnum
+            val conteo = conteos[filtroEnum] ?: 0
+            val titulo = when (filtroEnum) {
+                FiltroTipoRegistro.TODOS -> "Todos"
+                FiltroTipoRegistro.MOOD -> "Ánimo"
+                FiltroTipoRegistro.DBT -> "DBT"
+                FiltroTipoRegistro.NEURO -> "Neuro"
+                FiltroTipoRegistro.ADICCIONES -> "Adicciones"
+            }
+            val icono = when (filtroEnum) {
+                FiltroTipoRegistro.TODOS -> Icons.AutoMirrored.Filled.List
+                FiltroTipoRegistro.MOOD -> Icons.Default.CloudQueue
+                FiltroTipoRegistro.DBT -> Icons.AutoMirrored.Filled.MenuBook
+                FiltroTipoRegistro.NEURO -> Icons.Default.Face
+                FiltroTipoRegistro.ADICCIONES -> Icons.Default.LocalFireDepartment
+            }
+
+            FilterChip(
+                selected = estaActivo,
+                onClick = { onSeleccionar(filtroEnum) },
+                label = { Text("$titulo ($conteo)") },
+                leadingIcon = {
+                    Icon(
+                        imageVector = if (estaActivo) Icons.Default.Check else icono,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = VerdePrincipal,
+                    selectedLabelColor = Color.White,
+                    selectedLeadingIconColor = Color.White
+                ),
+                shape = CircleShape
+            )
+        }
+    }
+}
+
+@Composable
+fun EstadoVacioHistorial(
+    filtroActual: FiltroTipoRegistro,
+    onLimpiarFiltro: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(24.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(
+                imageVector = when (filtroActual) {
+                    FiltroTipoRegistro.MOOD -> Icons.Default.CloudQueue
+                    FiltroTipoRegistro.NEURO -> Icons.Default.Face
+                    FiltroTipoRegistro.ADICCIONES -> Icons.Default.LocalFireDepartment
+                    else -> Icons.AutoMirrored.Filled.MenuBook
+                },
+                contentDescription = null,
+                modifier = Modifier.size(56.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "Aún no tienes registros en esta categoría. ¡Cada pequeño paso cuenta cuando decidas comenzar!",
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            if (filtroActual != FiltroTipoRegistro.TODOS) {
+                OutlinedButton(onClick = onLimpiarFiltro) {
+                    Text("Limpiar filtro")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DialogoConfirmarEliminar(
+    registro: RegistroHistorial,
+    onConfirmar: () -> Unit,
+    onCancelar: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onCancelar,
+        title = { Text("Eliminar registro") },
+        text = {
+            Text(
+                "Se eliminará el registro de ${tituloArea(registro.tipoArea)} del " +
+                        "${formatearFecha(registro.fechaHoraCreacion)}. " +
+                        "Esta acción no se puede deshacer."
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirmar) {
+                Text("Eliminar", color = MaterialTheme.colorScheme.error)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onCancelar) {
+                Text("Cancelar")
+            }
+        }
+    )
+}
+
+@Composable
+fun TarjetaRegistro(
     registro: RegistroHistorial,
     onEditar: () -> Unit,
     onEliminar: () -> Unit
@@ -287,12 +378,14 @@ private fun TarjetaRegistro(
         "animo" -> ColorMood
         "dbt" -> ColorDbt
         "neurodesarrollo" -> ColorNeuro
+        "adicciones" -> ColorAdicciones
         else -> MaterialTheme.colorScheme.outlineVariant
     }
     val iconoArea = when (registro.tipoArea) {
         "animo" -> Icons.Default.CloudQueue
         "neurodesarrollo" -> Icons.Default.Face
-        else -> Icons.Default.MenuBook
+        "adicciones" -> Icons.Default.LocalFireDepartment
+        else -> Icons.AutoMirrored.Filled.MenuBook
     }
 
     Card(
@@ -303,7 +396,6 @@ private fun TarjetaRegistro(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(modifier = Modifier.height(IntrinsicSize.Min)) {
-            // Franja lateral
             Box(
                 modifier = Modifier
                     .width(6.dp)
@@ -311,14 +403,12 @@ private fun TarjetaRegistro(
                     .background(colorFranja)
             )
 
-            // Contenedor principal
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Header: Icono + Título + Botones
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -367,7 +457,6 @@ private fun TarjetaRegistro(
                         }
                     }
 
-                    // Botones de acción suaves
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         if (registro.tipoArea in AREAS_EDITABLES) {
                             IconButton(
@@ -400,21 +489,24 @@ private fun TarjetaRegistro(
                     }
                 }
 
-                // Píldoras de Metadatos
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    // Escala común 0 a 4 en todos los ámbitos
+                // Píldoras de Metadatos en escala común 0 a 4
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     val labelIntensidad = when (registro.tipoArea) {
-                        "animo" -> "Intensidad: ${registro.nivelIntensidad} / $ESCALA_MAX"
-                        "neurodesarrollo" -> "Intensidad: ${registro.intensidadNeuro} / $ESCALA_MAX"
-                        else -> "Intensidad emocional: ${registro.nivelImpulso} / $ESCALA_MAX"
+                        "animo" -> "Resumen: ${registro.nivelIntensidad ?: 0} / $ESCALA_MAX"
+                        "neurodesarrollo" -> "Intensidad: ${registro.intensidadNeuro ?: 0} / $ESCALA_MAX"
+                        "adicciones" -> "Craving: ${registro.craving ?: 0} / $ESCALA_MAX"
+                        else -> "Intensidad emocional: ${registro.nivelImpulso ?: 0} / $ESCALA_MAX"
                     }
                     val labelContexto = when (registro.tipoArea) {
                         "animo" -> registro.contexto
                         "neurodesarrollo" -> registro.estrategia
+                        "adicciones" -> registro.accionProtectora ?: registro.desencadenante
                         else -> registro.habilidad
                     }
 
-                    // Píldora 1: Nivel
                     Surface(
                         shape = CircleShape,
                         color = Color.White,
@@ -430,7 +522,6 @@ private fun TarjetaRegistro(
                         }
                     }
 
-                    // Píldora 2: Contexto / Habilidad / Estrategia
                     if (labelContexto != null) {
                         Surface(
                             shape = CircleShape,
@@ -454,20 +545,42 @@ private fun TarjetaRegistro(
                     }
                 }
 
-                // Neurodesarrollo: tipo de entrada y resultado percibido
-                if (registro.tipoArea == "neurodesarrollo") {
-                    val detalle = listOfNotNull(registro.tipoEntrada, registro.resultadoPercibido)
-                        .joinToString(" · ")
-                    if (detalle.isNotEmpty()) {
+                // Detalle específico por ámbito
+                when (registro.tipoArea) {
+                    "animo" -> {
+                        val dep = registro.depresion ?: 0
+                        val ele = registro.elevacion ?: 0
+                        val sueno = registro.horasSueno?.let { " · Sueño: ${it}h" }.orEmpty()
                         Text(
-                            text = detalle,
+                            text = "Depresión: -$dep · Elevación: +$ele$sueno",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
+                    "neurodesarrollo" -> {
+                        val detalle = listOfNotNull(registro.tipoEntrada, registro.resultadoPercibido)
+                            .joinToString(" · ")
+                        if (detalle.isNotEmpty()) {
+                            Text(
+                                text = detalle,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    "adicciones" -> {
+                        val detalle = listOfNotNull(registro.desencadenante, registro.estadoObjetivo)
+                            .joinToString(" · ")
+                        if (detalle.isNotEmpty()) {
+                            Text(
+                                text = detalle,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
 
-                // Caja de Lectura de Notas
                 registro.notasOpcionales?.let { notas ->
                     Surface(
                         color = ColorFondoNotas,
