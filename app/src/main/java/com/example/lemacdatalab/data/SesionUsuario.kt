@@ -69,6 +69,13 @@ object SesionUsuario {
         return "Versión $version, aceptada el ${formato.format(Date(fecha))}"
     }
 
+    fun ultimaSyncUtc(context: Context, idUsuario: Int): Long =
+        preferencias(context).getLong("ultima_sync_utc_$idUsuario", 0L)
+
+    fun guardarUltimaSyncUtc(context: Context, idUsuario: Int, marcaUtc: Long) {
+        preferencias(context).edit { putLong("ultima_sync_utc_$idUsuario", marcaUtc) }
+    }
+
     private fun preferencias(context: Context) =
         context.getSharedPreferences(PREFERENCIAS, Context.MODE_PRIVATE)
 
