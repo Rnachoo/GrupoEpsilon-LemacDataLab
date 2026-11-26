@@ -1,7 +1,6 @@
 package com.example.lemacdatalab.navigation
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.Lifecycle
@@ -20,6 +19,7 @@ import com.example.lemacdatalab.screens.HistorialScreen
 import com.example.lemacdatalab.screens.LoginScreen
 import com.example.lemacdatalab.screens.MenuScreen
 import com.example.lemacdatalab.screens.MoodScreen
+import com.example.lemacdatalab.screens.NeuroScreen
 import com.example.lemacdatalab.screens.ProximamenteScreen
 
 private fun NavHostController.volverSeguro() {
@@ -109,6 +109,20 @@ fun NavGraph(navController: NavHostController) {
             )
         }
 
+        composable(
+            route = "neurodesarrollo?idRegistro={idRegistro}",
+            arguments = listOf(navArgument("idRegistro") {
+                type = NavType.IntType
+                defaultValue = -1
+            })
+        ) { entrada ->
+            val id = entrada.arguments?.getInt("idRegistro") ?: -1
+            NeuroScreen(
+                onBack = { navController.volverSeguro() },
+                idRegistro = id.takeIf { it != -1 }
+            )
+        }
+
         composable("historial") {
             HistorialScreen(
                 onBack = { navController.volverSeguro() },
@@ -116,6 +130,7 @@ fun NavGraph(navController: NavHostController) {
                     when (registro.tipoArea) {
                         "animo" -> navController.navigate("animo?idRegistro=${registro.idRegistro}")
                         "dbt" -> navController.navigate("dbt?idRegistro=${registro.idRegistro}")
+                        "neurodesarrollo" -> navController.navigate("neurodesarrollo?idRegistro=${registro.idRegistro}")
                     }
                 }
             )
@@ -139,16 +154,7 @@ fun NavGraph(navController: NavHostController) {
             )
         }
 
-        // Módulos pendientes: Pantalla reutilizable «Próximamente» con botón volver
-        composable("neurodesarrollo") {
-            ProximamenteScreen(
-                titulo = "Neurodesarrollo",
-                subtitulo = "Rutinas y autorregulación",
-                icono = Icons.Default.Face,
-                onBack = { navController.volverSeguro() }
-            )
-        }
-
+        // Módulo pendiente: Pantalla reutilizable «Próximamente» con botón volver
         composable("adicciones") {
             ProximamenteScreen(
                 titulo = "Adicciones",

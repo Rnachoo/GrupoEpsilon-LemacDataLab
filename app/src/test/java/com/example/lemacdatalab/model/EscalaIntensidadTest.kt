@@ -6,7 +6,8 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class EscalaIntensidadTest {
+class
+EscalaIntensidadTest {
 
     @Test
     fun escala_0y4_sonValidos() {
