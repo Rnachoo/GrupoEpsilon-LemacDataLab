@@ -129,17 +129,20 @@ data class RegistroDto(
 ) {
     fun claveNatural(): Triple<Int, String, String> = Triple(idUsuario, fechaDia, tipoArea)
 
-    fun tieneEscalaValida(): Boolean = when (tipoArea) {
-        "animo" -> {
-            val dep = depresion ?: 0
-            val ele = elevacion ?: 0
-            val niv = nivelIntensidad ?: nivelResumenAnimo(dep, ele)
-            esEscalaValida(dep) && esEscalaValida(ele) && esEscalaValida(niv)
+    fun tieneEscalaValida(): Boolean {
+        if (estadoRegistro == "eliminado") return true
+        return when (tipoArea) {
+            "animo" -> {
+                val dep = depresion ?: 0
+                val ele = elevacion ?: 0
+                val niv = nivelIntensidad ?: nivelResumenAnimo(dep, ele)
+                esEscalaValida(dep) && esEscalaValida(ele) && esEscalaValida(niv)
+            }
+            "dbt" -> intensidadEmocional != null && esEscalaValida(intensidadEmocional)
+            "neurodesarrollo" -> intensidadNeuro != null && esEscalaValida(intensidadNeuro)
+            "adicciones" -> craving != null && esEscalaValida(craving)
+            else -> false
         }
-        "dbt" -> intensidadEmocional != null && esEscalaValida(intensidadEmocional)
-        "neurodesarrollo" -> intensidadNeuro != null && esEscalaValida(intensidadNeuro)
-        "adicciones" -> craving != null && esEscalaValida(craving)
-        else -> false
     }
 
     fun aRegistroMaestro(estadoSync: String = "sincronizado"): RegistroMaestro = RegistroMaestro(

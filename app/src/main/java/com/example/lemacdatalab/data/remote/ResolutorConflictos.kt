@@ -26,12 +26,8 @@ fun resolverConflicto(local: RegistroDto, remoto: RegistroDto): ResultadoConflic
     val descartado = if (ganoRemoto) local else remoto
     val idFinal = if (local.idRegistro != 0) local.idRegistro else remoto.idRegistro
 
-    // Si el ganador no está eliminado y está reemplazando otra versión previa, queda marcado como editado
-    val estadoFinal = when {
-        ganadorBase.estadoRegistro == "eliminado" -> "eliminado"
-        descartado.estadoRegistro == "eliminado" -> "confirmado"
-        else -> "editado"
-    }
+    // Si el ganador no está eliminado, queda marcado como editado al reemplazar la versión previa
+    val estadoFinal = if (ganadorBase.estadoRegistro == "eliminado") "eliminado" else "editado"
 
     val ganador = ganadorBase.copy(
         idRegistro = idFinal,
@@ -52,4 +48,4 @@ fun resolverConflicto(local: RegistroDto, remoto: RegistroDto): ResultadoConflic
 }
 
 private fun firmaDeterminista(registro: RegistroDto): String =
-    "${registro.estadoRegistro}|${registro.notasOpcionales.orEmpty()}|${registro.describirDetalle()}|${registro.idRegistro}"
+    "${registro.estadoRegistro}|${registro.notasOpcionales.orEmpty()}|${registro.describirDetalle()}"
