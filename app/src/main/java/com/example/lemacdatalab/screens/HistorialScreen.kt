@@ -63,6 +63,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -251,13 +253,17 @@ fun TarjetaEstadoSincronizacion(
         is EstadoSyncUi.SinConexion -> QuadEstadoSync(
             fondo = Color(0xFFFDF6EC),
             borde = Color(0xFFE0C49F),
-            acento = Color(0xFFC85A32),
+            acento = Color(0xFFB33E18),
             texto = "Modo sin conexión · $pendientes pendiente(s) en cola"
         )
     }
 
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .semantics {
+                contentDescription = "Estado de sincronización: $textoPrincipal"
+            },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = colorFondo),
         border = BorderStroke(1.dp, colorBorde)
@@ -329,7 +335,11 @@ fun SelectorPeriodoEvolucion(
     modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .semantics {
+                contentDescription = "Selector de período de evolución: actualmente $diasSeleccionados días"
+            },
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -391,6 +401,9 @@ fun BarraFiltrosAmbito(
                 selected = estaActivo,
                 onClick = { onSeleccionar(filtroEnum) },
                 label = { Text("$titulo ($conteo)") },
+                modifier = Modifier.semantics {
+                    contentDescription = "Filtrar por $titulo, $conteo registros${if (estaActivo) ", seleccionado" else ""}"
+                },
                 leadingIcon = {
                     Icon(
                         imageVector = if (estaActivo) Icons.Default.Check else icono,
@@ -401,7 +414,9 @@ fun BarraFiltrosAmbito(
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = VerdePrincipal,
                     selectedLabelColor = Color.White,
-                    selectedLeadingIconColor = Color.White
+                    selectedLeadingIconColor = Color.White,
+                    labelColor = Color(0xFF1A3B2B),
+                    iconColor = Color(0xFF2B4C3B)
                 ),
                 shape = CircleShape
             )

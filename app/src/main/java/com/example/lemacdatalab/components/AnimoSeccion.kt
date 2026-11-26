@@ -40,6 +40,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -98,7 +100,7 @@ fun AnimoSeccion(
         Text(
             text = "Tómate un momento para identificar qué tan presentes están estas dos experiencias.",
             style = MaterialTheme.typography.bodyMedium,
-            color = LemacGreenDark.copy(alpha = 0.75f)
+            color = LemacGreenDark.copy(alpha = 0.88f)
         )
 
         Spacer(modifier = Modifier.height(14.dp))
@@ -255,7 +257,7 @@ fun AnimoSeccion(
             text = state.notasError ?: "${state.notas.length}/${MoodViewModel.MAX_NOTAS}",
             style = MaterialTheme.typography.labelSmall,
             color = if (state.notasError != null) MaterialTheme.colorScheme.error
-            else LemacGreenDark.copy(alpha = 0.65f),
+            else LemacGreenDark.copy(alpha = 0.85f),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 4.dp, end = 4.dp),
@@ -271,11 +273,15 @@ private fun FilaInterruptor(
     activo: Boolean,
     onCambio: (Boolean) -> Unit
 ) {
+    val estadoTexto = if (activo) "Activado" else "Desactivado"
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(LemacNoteBg)
+            .semantics(mergeDescendants = true) {
+                contentDescription = "$titulo: $estadoTexto. $descripcion"
+            }
             .toggleable(value = activo, role = Role.Switch, onValueChange = onCambio)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -290,7 +296,7 @@ private fun FilaInterruptor(
             Text(
                 text = descripcion,
                 style = MaterialTheme.typography.bodySmall,
-                color = LemacGreenDark.copy(alpha = 0.7f)
+                color = LemacGreenDark.copy(alpha = 0.85f)
             )
         }
         Spacer(modifier = Modifier.width(12.dp))
@@ -310,7 +316,7 @@ private fun coloresCampo() = OutlinedTextFieldDefaults.colors(
     focusedBorderColor = WarmLowAccent,
     unfocusedBorderColor = LemacBorderSoft,
     focusedLabelColor = LemacGreenDark,
-    unfocusedLabelColor = LemacGreenDark.copy(alpha = 0.7f),
+    unfocusedLabelColor = LemacGreenDark.copy(alpha = 0.85f),
     cursorColor = WarmLowAccent
 )
 

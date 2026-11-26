@@ -35,6 +35,8 @@ import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -91,7 +93,7 @@ fun NeuroSeccion(
         Text(
             text = "Cuéntanos qué estás registrando y cómo te fue.",
             style = MaterialTheme.typography.bodyMedium,
-            color = LemacGreenDark.copy(alpha = 0.75f)
+            color = LemacGreenDark.copy(alpha = 0.88f)
         )
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -99,7 +101,12 @@ fun NeuroSeccion(
         // ---------- Tipo de entrada ----------
         TituloGrupo("¿Qué estás registrando?")
 
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(
+            modifier = Modifier.semantics {
+                contentDescription = "Selector de tipo de entrada: ${state.tipoEntrada?.etiqueta ?: "sin seleccionar"}"
+            },
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
             TipoEntradaNeuro.entries.chunked(2).forEach { fila ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -134,7 +141,12 @@ fun NeuroSeccion(
 
         TituloGrupo("¿Qué estrategia usaste?")
 
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(
+            modifier = Modifier.semantics {
+                contentDescription = "Selector de estrategia utilizada: ${state.estrategia?.etiqueta ?: "sin seleccionar"}"
+            },
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
             EstrategiaNeuro.entries.chunked(2).forEach { fila ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -183,7 +195,12 @@ fun NeuroSeccion(
 
         TituloGrupo("¿Cómo te fue con la estrategia?")
 
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(
+            modifier = Modifier.semantics {
+                contentDescription = "Selector de resultado percibido: ${state.resultado?.etiqueta ?: "sin seleccionar"}"
+            },
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
             ResultadoNeuro.entries.forEach { resultado ->
                 ContextoChip(
                     texto = resultado.etiqueta,
@@ -211,6 +228,9 @@ fun NeuroSeccion(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(135.dp)
+                .semantics {
+                    contentDescription = "Campo de notas opcionales, ${state.notas.length} de ${NeuroViewModel.MAX_NOTAS} caracteres"
+                }
                 .bringIntoViewRequester(bringIntoViewRequester)
                 .onFocusEvent { focus ->
                     if (focus.isFocused) {
@@ -230,7 +250,7 @@ fun NeuroSeccion(
             text = state.notasError ?: "${state.notas.length}/${NeuroViewModel.MAX_NOTAS}",
             style = MaterialTheme.typography.labelSmall,
             color = if (state.notasError != null) MaterialTheme.colorScheme.error
-            else LemacGreenDark.copy(alpha = 0.65f),
+            else LemacGreenDark.copy(alpha = 0.85f),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 4.dp, end = 4.dp),
@@ -270,7 +290,7 @@ private fun coloresCampoNeuro() = OutlinedTextFieldDefaults.colors(
     focusedBorderColor = WarmLowAccent,
     unfocusedBorderColor = LemacBorderSoft,
     focusedLabelColor = LemacGreenDark,
-    unfocusedLabelColor = LemacGreenDark.copy(alpha = 0.7f),
+    unfocusedLabelColor = LemacGreenDark.copy(alpha = 0.85f),
     cursorColor = WarmLowAccent
 )
 

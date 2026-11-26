@@ -41,6 +41,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -398,6 +400,9 @@ private fun TarjetaRegistroHoy(alHacerClic: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .semantics(mergeDescendants = true) {
+                contentDescription = "Registro de hoy: Completa los 4 ámbitos del día, puedes omitir cualquiera"
+            }
             .clickable { alHacerClic() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = VerdePrincipal),
@@ -435,7 +440,7 @@ private fun TarjetaRegistroHoy(alHacerClic: () -> Unit) {
                     Text(
                         text = "Completa los 4 ámbitos del día (puedes omitir cualquiera)",
                         fontSize = 12.sp,
-                        color = SuperficieBlanca.copy(alpha = 0.85f)
+                        color = SuperficieBlanca.copy(alpha = 0.95f)
                     )
                 }
             }
@@ -494,7 +499,11 @@ private fun AccesoModuloCompacto(
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier.clickable { onClick() },
+        modifier = modifier
+            .semantics(mergeDescendants = true) {
+                contentDescription = "Abrir módulo $titulo"
+            }
+            .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = SuperficieBlanca),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
