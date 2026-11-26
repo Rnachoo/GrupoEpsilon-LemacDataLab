@@ -6,8 +6,10 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import com.example.lemacdatalab.model.DatosAnimo
+import com.example.lemacdatalab.model.DatosNeuro
 import com.example.lemacdatalab.model.DbtDetalle
 import com.example.lemacdatalab.model.MoodDetalle
+import com.example.lemacdatalab.model.NeuroDetalle
 import com.example.lemacdatalab.model.RegistroHistorial
 import com.example.lemacdatalab.model.RegistroMaestro
 import com.example.lemacdatalab.model.RegistroVersion
@@ -21,16 +23,21 @@ abstract class RegistroDetalleDao {
 
     @Insert
     abstract suspend fun insertarMaestro(registro: RegistroMaestro): Long
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     abstract suspend fun insertarMood(detalle: MoodDetalle)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     abstract suspend fun insertarDbt(detalle: DbtDetalle)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    abstract suspend fun insertarNeuro(detalle: NeuroDetalle)
+
     @Insert
     abstract suspend fun insertarVersion(version: RegistroVersion)
 
     // ---------- LECTURAS AUXILIARES ----------
+
     @Query(
         "SELECT * FROM registro_maestro " +
                 "WHERE idUsuario = :idUsuario AND fechaDia = :fechaDia AND tipoArea = :tipoArea LIMIT 1"
@@ -46,10 +53,14 @@ abstract class RegistroDetalleDao {
     @Query("SELECT * FROM dbt_detalle WHERE idRegistro = :idRegistro")
     abstract suspend fun obtenerDbtDetalle(idRegistro: Int): DbtDetalle?
 
+    @Query("SELECT * FROM neuro_detalle WHERE idRegistro = :idRegistro")
+    abstract suspend fun obtenerNeuroDetalle(idRegistro: Int): NeuroDetalle?
+
     @Query("SELECT COUNT(*) FROM registro_version WHERE idRegistro = :idRegistro")
     abstract suspend fun contarVersiones(idRegistro: Int): Int
 
     // ---------- GUARDAR (un registro por usuario, día y ámbito) ----------
+
     @Transaction
     open suspend fun guardarMood(registro: RegistroMaestro, datos: DatosAnimo) {
         val id = guardarMaestroDelDia(registro)
@@ -79,6 +90,20 @@ abstract class RegistroDetalleDao {
         )
     }
 
+    @Transaction
+    open suspend fun guardarNeuro(registro: RegistroMaestro, datos: DatosNeuro) {
+        val id = guardarMaestroDelDia(registro)
+        insertarNeuro(
+            NeuroDetalle(
+                idRegistro = id,
+                tipoEntrada = datos.tipoEntrada,
+                intensidad = datos.intensidad,
+                estrategia = datos.estrategia,
+                resultadoPercibido = datos.resultadoPercibido
+            )
+        )
+    }
+
     private suspend fun guardarMaestroDelDia(registro: RegistroMaestro): Int {
         val existente = buscarPorClave(registro.idUsuario, registro.fechaDia, registro.tipoArea)
             ?: return insertarMaestro(registro).toInt()
@@ -94,6 +119,7 @@ abstract class RegistroDetalleDao {
         val maestro = obtenerMaestro(idRegistro) ?: return
         val detalle = obtenerMoodDetalle(idRegistro)?.let { describirMood(it) }
             ?: obtenerDbtDetalle(idRegistro)?.let { describirDbt(it) }
+            ?: obtenerNeuroDetalle(idRegistro)?.let { describirNeuro(it) }
             ?: ""
         insertarVersion(
             RegistroVersion(
@@ -114,6 +140,10 @@ abstract class RegistroDetalleDao {
     private fun describirDbt(d: DbtDetalle) =
         "habilidad=${d.habilidad};intensidadEmocional=${d.intensidadEmocional}"
 
+    private fun describirNeuro(n: NeuroDetalle) =
+        "tipoEntrada=${n.tipoEntrada};intensidad=${n.intensidad};estrategia=${n.estrategia};" +
+                "resultadoPercibido=${n.resultadoPercibido}"
+
     @Query(
         "UPDATE registro_maestro SET estadoRegistro = :estado, notasOpcionales = :notas, " +
                 "estadoSync = 'pendiente', modificadoEnUtc = :ahoraUtc WHERE idRegistro = :idRegistro"
@@ -121,6 +151,7 @@ abstract class RegistroDetalleDao {
     abstract suspend fun actualizarMaestro(idRegistro: Int, estado: String, notas: String?, ahoraUtc: Long)
 
     // ---------- READ ----------
+
     @Query(
         """
         SELECT r.idRegistro AS idRegistro,
@@ -136,10 +167,15 @@ abstract class RegistroDetalleDao {
                m.elevacion AS elevacion,
                m.horasSueno AS horasSueno,
                m.altoRiesgo AS altoRiesgo,
-               m.sintomasPsicoticos AS sintomasPsicoticos
+               m.sintomasPsicoticos AS sintomasPsicoticos,
+               n.tipoEntrada AS tipoEntrada,
+               n.intensidad AS intensidadNeuro,
+               n.estrategia AS estrategia,
+               n.resultadoPercibido AS resultadoPercibido
         FROM registro_maestro r
         LEFT JOIN mood_detalle m ON m.idRegistro = r.idRegistro
         LEFT JOIN dbt_detalle d ON d.idRegistro = r.idRegistro
+        LEFT JOIN neuro_detalle n ON n.idRegistro = r.idRegistro
         WHERE r.idUsuario = :idUsuario AND r.estadoRegistro != 'eliminado'
         ORDER BY r.fechaHoraCreacion DESC, r.idRegistro DESC
         """
@@ -162,10 +198,15 @@ abstract class RegistroDetalleDao {
                m.elevacion AS elevacion,
                m.horasSueno AS horasSueno,
                m.altoRiesgo AS altoRiesgo,
-               m.sintomasPsicoticos AS sintomasPsicoticos
+               m.sintomasPsicoticos AS sintomasPsicoticos,
+               n.tipoEntrada AS tipoEntrada,
+               n.intensidad AS intensidadNeuro,
+               n.estrategia AS estrategia,
+               n.resultadoPercibido AS resultadoPercibido
         FROM registro_maestro r
         LEFT JOIN mood_detalle m ON m.idRegistro = r.idRegistro
         LEFT JOIN dbt_detalle d ON d.idRegistro = r.idRegistro
+        LEFT JOIN neuro_detalle n ON n.idRegistro = r.idRegistro
         WHERE r.idRegistro = :idRegistro AND r.idUsuario = :idUsuario AND r.estadoRegistro != 'eliminado'
         """
     )
@@ -196,6 +237,19 @@ abstract class RegistroDetalleDao {
     )
     abstract suspend fun actualizarDetalleDbt(idRegistro: Int, habilidad: String, intensidadEmocional: Int)
 
+    @Query(
+        "UPDATE neuro_detalle SET tipoEntrada = :tipoEntrada, intensidad = :intensidad, " +
+                "estrategia = :estrategia, resultadoPercibido = :resultadoPercibido " +
+                "WHERE idRegistro = :idRegistro"
+    )
+    abstract suspend fun actualizarDetalleNeuro(
+        idRegistro: Int,
+        tipoEntrada: String,
+        intensidad: Int,
+        estrategia: String,
+        resultadoPercibido: String
+    )
+
     @Transaction
     open suspend fun actualizarMood(idRegistro: Int, datos: DatosAnimo, notas: String?) {
         val ahora = System.currentTimeMillis()
@@ -219,6 +273,20 @@ abstract class RegistroDetalleDao {
         guardarVersionAnterior(idRegistro, ahora)
         actualizarMaestro(idRegistro, "editado", notas, ahora)
         actualizarDetalleDbt(idRegistro, habilidad, intensidadEmocional)
+    }
+
+    @Transaction
+    open suspend fun actualizarNeuro(idRegistro: Int, datos: DatosNeuro, notas: String?) {
+        val ahora = System.currentTimeMillis()
+        guardarVersionAnterior(idRegistro, ahora)
+        actualizarMaestro(idRegistro, "editado", notas, ahora)
+        actualizarDetalleNeuro(
+            idRegistro = idRegistro,
+            tipoEntrada = datos.tipoEntrada,
+            intensidad = datos.intensidad,
+            estrategia = datos.estrategia,
+            resultadoPercibido = datos.resultadoPercibido
+        )
     }
 
     // ---------- DELETE (borrado lógico) ----------
